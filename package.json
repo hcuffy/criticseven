@@ -12,6 +12,7 @@
     "server": "node ./dist-server/index",
     "dev": "NODE_ENV=development yarn build && yarn server",
     "prod": "NODE_ENV=production yarn build && yarn server",
+    "debug:dev": "NODE_ENV=development DEBUG=criticseven:* yarn build && yarn server",
     "clean": "rimraf dist-server",
     "transpile": "babel ./server --out-dir dist-server",
     "watch:dev": "nodemon"

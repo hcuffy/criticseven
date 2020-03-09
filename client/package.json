@@ -1,17 +1,22 @@
 {
-  "name": "client",
+  "name": "criticseven-client",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.3.2",
-    "@testing-library/user-event": "^7.1.2",
-    "react": "^16.13.0",
+    "@blueprintjs/core": "^3.24.0",
+    "i18next": "^19.3.2",
+    "lodash": "^4.17.15",
+    "react": "^16.9.0",
     "react-dom": "^16.13.0",
-    "react-scripts": "3.4.0"
+    "react-i18next": "^11.3.3",
+    "react-redux": "^7.2.0",
+    "react-scripts": "3.4.0",
+    "redux": "^4.0.5",
+    "redux-thunk": "^2.3.0"
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:dev": "webpack-dev-server",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -30,5 +35,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "proxy": "http://localhost:8800/",
+  "devDependencies": {
+    "eslint": "^6.3.0",
+    "eslint-plugin-react": "^7.14.3",
+    "redux-logger": "^3.0.6"
   }
 }

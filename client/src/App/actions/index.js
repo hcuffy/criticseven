@@ -1,8 +1,5 @@
-import * as generatorActions from './generator';
+import * as movieActions from "./movies";
 
 export const actionCreators = {
-    getBatches:           generatorActions.getBatches,
-    determineInputFields: generatorActions.determineInputFields,
-    generateCompany:      generatorActions.generateCompany
+  getMovies: movieActions.getMovies
 };
-

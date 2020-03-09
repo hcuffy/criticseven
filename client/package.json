@@ -2,6 +2,12 @@
   "name": "criticseven-client",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "dependencies": {
     "@blueprintjs/core": "^3.24.0",
     "i18next": "^19.3.2",
@@ -14,32 +20,11 @@
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "start:dev": "webpack-dev-server",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+  "devDependencies": {
+    "redux-logger": "^3.0.6"
   },
   "eslintConfig": {
     "extends": "react-app"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "proxy": "http://localhost:8800/",
-  "devDependencies": {
-    "eslint": "^6.3.0",
-    "eslint-plugin-react": "^7.14.3",
-    "redux-logger": "^3.0.6"
-  }
+  "proxy": "http://localhost:8800/"
 }

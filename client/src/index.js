@@ -1,35 +1,42 @@
-import React from 'react';
-import {render} from 'react-dom';
-import App from './App/index';
-import {Provider} from 'react-redux';
-import {createStore, applyMiddleware} from 'redux';
-import thunk from 'redux-thunk';
-import {createLogger} from 'redux-logger';
-import rootReducer from './App/reducers/index';
-import * as serviceWorker from './serviceWorker';
-import './i18n';
+import React from 'react'
+import { render } from 'react-dom'
+import App from './App/index'
+import { Provider } from 'react-redux'
+import { createStore, applyMiddleware } from 'redux'
+import { createHashHistory } from 'history'
+import thunk from 'redux-thunk'
+import { createLogger } from 'redux-logger'
+import createRootReducer from './App/reducers/index'
+import * as serviceWorker from './serviceWorker'
+import './i18n'
 
-const middleware = [];
+const middleware = []
 const logger = createLogger({
-    level:     'info',
-    collapsed: true
-});
+  level: 'info',
+  collapsed: true
+})
 
-middleware.push(thunk);
+const history = createHashHistory()
+const rootReducer = createRootReducer(history)
+
+middleware.push(thunk)
 
 if (process.env.NODE_ENV === 'development') {
-    middleware.push(logger);
+  middleware.push(logger)
 }
 
-const createStoreWithMiddleware = applyMiddleware(...middleware)(createStore);
+const createStoreWithMiddleware = applyMiddleware(...middleware)(createStore)
 
-const store = createStoreWithMiddleware(rootReducer,
-                                        window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+const store = createStoreWithMiddleware(
+  rootReducer,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+)
 
 render(
-    <Provider store={store}>
-        <App />
-    </Provider>, document.getElementById('root')
-);
+  <Provider store={store} history={history}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+)
 
-serviceWorker.unregister();
+serviceWorker.unregister()

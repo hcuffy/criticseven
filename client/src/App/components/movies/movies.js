@@ -1,7 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
-import { actionCreators } from '../actions/index'
+import { actionCreators } from '../../actions/index'
 import { useTranslation } from 'react-i18next'
 import './styles.css'
 

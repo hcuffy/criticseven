@@ -1,5 +1,5 @@
 import express from 'express'
-import { getMovies } from '../controllers'
+import { getMovies } from '../actions'
 const router = express.Router()
 
 router.get('/', getMovies)

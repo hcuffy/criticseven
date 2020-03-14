@@ -8,7 +8,7 @@
   "main": "./server.js",
   "scripts": {
     "start": "yarn prod",
-    "install": "cd client && yarn install && yarn install",
+    "install:client": "cd client && yarn install",
     "build": "yarn clean && yarn transpile",
     "client": "cd client && yarn start",
     "server": "node ./dist-server/index",
@@ -19,6 +19,7 @@
     "debug:dev": "NODE_ENV=development DEBUG=criticseven:* yarn build && yarn server",
     "clean": "rimraf dist-server",
     "transpile": "babel ./server --out-dir dist-server",
+    "heroku-postbuild": "cd client && yarn install && yarn build",
     "watch:dev": "nodemon"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "debug": "~2.6.9",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
+    "mongoose": "^5.9.4",
     "morgan": "~1.9.1"
   },
   "devDependencies": {

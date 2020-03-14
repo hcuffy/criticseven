@@ -1,4 +1,6 @@
+import path from 'path'
 import 'dotenv/config.js'
+import mongoose from 'mongoose'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan'
@@ -6,9 +8,13 @@ import http from 'http'
 import debugLib from 'debug'
 import routes from './routes'
 
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/criticseven')
+
 const app = express()
 const server = http.createServer(app)
 const port = process.env.PORT || 5000
+
+app.use(express.static(path.join(__dirname, 'public')))
 
 app.use(logger('dev'))
 app.use(express.json())

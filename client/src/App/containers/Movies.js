@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 const Movies = ({ moviesData, actions }) => {
   const { t } = useTranslation()
-  console.log(moviesData)
+
   return (
     <div className={'main_div'}>
       <h4>{t('header.test')}</h4>

@@ -2,7 +2,7 @@ import { movieHandlers } from './reducerHandlers'
 import { reducerActionHandler } from '../../../reducers/defaultHandlers.js'
 
 const initialLoadState = {
-  test: []
+  movies: []
 }
 
 export const applyMovies = (state = initialLoadState, action) => {

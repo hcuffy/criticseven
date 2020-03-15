@@ -8,7 +8,10 @@ import http from 'http'
 import debugLib from 'debug'
 import routes from './routes'
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/criticseven')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/criticseven', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
 
 const app = express()
 const server = http.createServer(app)

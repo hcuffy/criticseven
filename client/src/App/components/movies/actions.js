@@ -1,5 +1,5 @@
 import { actions } from './constants'
-const axios = require('axios')
+import axios from 'axios'
 
 export const getMovies = () => async dispatch => {
   try {

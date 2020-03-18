@@ -10,11 +10,11 @@ export default class TmdbMovie {
 
   async getHomeMovies() {
     try {
-      const movies = await axios.get(
+      const { data } = await axios.get(
         `${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
       )
 
-      return movies
+      return data
     } catch (error) {
       console.error(error)
     }

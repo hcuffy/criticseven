@@ -1,7 +1,7 @@
 [ignore]
 
 [include]
-./movieDatabaseWrapper
+./tmbdWrapper
 [libs]
 
 [lints]

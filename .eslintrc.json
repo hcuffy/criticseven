@@ -1,0 +1,45 @@
+{
+  "root": true,
+  "extends": ["airbnb", "prettier"],
+  "plugins": ["prettier"],
+  "parser": "babel-eslint",
+
+  "rules": {
+    "array-element-newline": ["error", { "minItems": 4 }],
+    "arrow-parens": ["off"],
+    "consistent-return": "off",
+    "comma-dangle": "off",
+    "import/prefer-default-export": "off",
+    "indent": ["error", "tab"],
+    "lines-between-class-members": ["error", "always"],
+    "max-len": [
+      "error",
+      {
+        "code": 100
+      }
+    ],
+    "no-console": "off",
+    "no-use-before-define": "error",
+    "no-multi-assign": "error",
+    "no-multiple-empty-lines": [
+      "error",
+      {
+        "max": 1
+      }
+    ],
+    "no-trailing-spaces": "error",
+    "no-useless-return": "error",
+    "no-unused-vars": "error",
+    "no-unneeded-ternary": "error",
+    "no-var": "error",
+    "padded-blocks": ["error", { "blocks": "never", "classes": "always" }],
+    "padding-line-between-statements": [
+      "error",
+      { "blankLine": "always", "prev": "*", "next": "return" },
+      { "blankLine": "always", "prev": ["const", "let"], "next": "*" }
+    ],
+    "object-curly-spacing": ["error", "never"],
+    "semi": ["error", "never"],
+    "space-before-function-paren": ["error", "never"]
+  }
+}

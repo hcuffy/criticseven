@@ -3,7 +3,7 @@
   "extends": ["airbnb", "prettier"],
   "plugins": ["prettier"],
   "parser": "babel-eslint",
-
+  "ignorePatterns": ["random.json", "node_modules/"],
   "rules": {
     "array-element-newline": ["error", { "minItems": 4 }],
     "arrow-parens": ["off"],

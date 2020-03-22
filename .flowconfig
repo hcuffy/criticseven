@@ -1,7 +1,7 @@
 [ignore]
 .*/scratch/.*
 [include]
-./tmbdWrapper
+.*/tmbdWrapper/.*
 [libs]
 
 [lints]

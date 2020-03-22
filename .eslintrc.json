@@ -1,7 +1,7 @@
 {
   "root": true,
-  "extends": ["airbnb", "prettier"],
-  "plugins": ["prettier"],
+  "extends": ["airbnb", "prettier", "plugin:flowtype/recommended"],
+  "plugins": ["prettier", "flowtype"],
   "parser": "babel-eslint",
   "ignorePatterns": ["random.json", "node_modules/"],
   "rules": {

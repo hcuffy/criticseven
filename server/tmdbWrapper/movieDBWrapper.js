@@ -1,22 +1,27 @@
+// @flow
 import axios from 'axios'
+import type { PopularMovieType } from './types'
 
-const apiBaseURL = 'https://api.themoviedb.org/3'
+const apiBaseURL: string = 'https://api.themoviedb.org/3'
 
 export default class TmdbMovie {
-	constructor(apiKey, language = 'en-US') {
-		this.apiKey = apiKey
-		this.language = language
-	}
+  apiKey: string
+  language: string
 
-	async getHomeMovies() {
-		try {
-			const { data } = await axios.get(
-				`${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
-			)
+  constructor(apiKey: string, language: string = 'en-US') {
+    this.apiKey = apiKey
+    this.language = language
+  }
 
-			return data
-		} catch (error) {
-			console.error(error)
-		}
-	}
+  async getHomeMovies(): Promise<PopularMovieType> {
+    try {
+      const { data } = await axios.get(
+        `${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
+      )
+      
+      return data
+    } catch (error) {
+      console.error(error)
+    }
+  }
 }

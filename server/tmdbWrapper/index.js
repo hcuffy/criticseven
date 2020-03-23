@@ -1,1 +1,2 @@
-export { default as TmdbMovie } from './movieDBWrapper'
+export {default as TmdbMovie} from './movieDBWrapper'
+

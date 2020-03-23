@@ -23,7 +23,9 @@
     "watch:dev": "nodemon"
   },
   "dependencies": {
+    "@babel/runtime": "^7.9.2",
     "axios": "^0.19.2",
+    "concurrently": "^5.1.0",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "^4.17.1",
@@ -39,7 +41,6 @@
     "@babel/preset-env": "^7.8.7",
     "@babel/preset-flow": "^7.8.3",
     "babel-eslint": "^10.1.0",
-    "concurrently": "^5.1.0",
     "dotenv": "^8.2.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.1.0",

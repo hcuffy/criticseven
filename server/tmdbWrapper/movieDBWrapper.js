@@ -18,7 +18,7 @@ export default class TmdbMovie {
       const { data } = await axios.get(
         `${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
       )
-      
+
       return data
     } catch (error) {
       console.error(error)

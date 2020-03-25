@@ -1,6 +1,14 @@
 // @flow
 import axios from 'axios'
-import type { LatestMovieType, MovieDetailsType, PlayingMovieType, PopularMovieType, UpcomingMovieType } from './types'
+import type {
+  LatestMovieType,
+  MovieCreditsType,
+  MovieDetailsType,
+  MovieImageType,
+  PlayingMovieType,
+  PopularMovieType,
+  UpcomingMovieType
+} from './types'
 
 const apiBaseURL: string = 'https://api.themoviedb.org/3'
 
@@ -65,6 +73,30 @@ export default class TmdbMovie {
     try {
       const { data } = await axios.get(
         `${apiBaseURL}/movie/{movie_id}?api_key=${this.apiKey}&language=${this.language}`
+      )
+
+      return data
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async getMovieImages(movieId: number): Promise<MovieImageType> {
+    try {
+      const { data } = await axios.get(
+        `${apiBaseURL}/movie/{movie_id}/images?api_key=${this.apiKey}&${this.language}`
+      )
+
+      return data
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async getMovieCredits(movieId: number): Promise<MovieCreditsType> {
+    try {
+      const { data } = await axios.get(
+        `${apiBaseURL}/movie/{movie_id}/credits?api_key=${this.apiKey}&${this.language}`
       )
 
       return data

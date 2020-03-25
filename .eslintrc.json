@@ -39,6 +39,15 @@
       { "blankLine": "always", "prev": ["const", "let"], "next": "*" }
     ],
     "object-curly-spacing": ["error", "never"],
+    "object-curly-newline": [
+      "error",
+      {
+        "ImportDeclaration": "always",
+        "ExportDeclaration": "never",
+        "ObjectExpression": "always",
+        "ObjectPattern": "never"
+      }
+    ],
     "semi": ["error", "never"],
     "space-before-function-paren": ["error", "never"]
   }

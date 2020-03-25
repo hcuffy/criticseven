@@ -1,15 +1,15 @@
-import {TmdbMovie} from '../tmdbWrapper'
+import { TmdbMovie } from '../tmdbWrapper'
 
 const Tmdb = new TmdbMovie(process.env.API_KEY)
 
-export const getMovies = async(request, response) => {
-	try {
-		const movies = await Tmdb.getHomeMovies()
+export const getMovies = async (request, response) => {
+  try {
+    const movies = await Tmdb.getPopularMovies()
 
-		response.send(movies)
+    response.send(movies)
 
-		return
-	} catch (error) {
-		console.error(error)
-	}
+    return
+  } catch (error) {
+    console.error(error)
+  }
 }

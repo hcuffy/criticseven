@@ -128,3 +128,30 @@ export type MovieDetailsType = {|
   +vote_average: number,
   +vote_count: number
 |}
+
+export type CastCreditType = {|
+  +cast_id: number,
+  +character: string,
+  +credit_id: string,
+  +gender: number,
+  +id: number,
+  +name: string,
+  +order: number,
+  +profile_path: string | null
+|}
+
+export type CrewCreditType = {|
+  +credit_id: string,
+  +department: string,
+  +gender: number,
+  +id: number,
+  +job: string,
+  +name: string,
+  +profile_path: string | null
+|}
+
+export type MovieCreditsType = {|
+  +id: number,
+  +cast: $ReadOnlyArray<CrewCreditType>,
+  +crew: $ReadOnlyArray<CrewCreditType>
+|}

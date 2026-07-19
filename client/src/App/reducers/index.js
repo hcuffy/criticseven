@@ -1,5 +1,5 @@
 import { combineReducers } from '@reduxjs/toolkit'
-import { applyMovies } from '../components/movies/reducers'
+import { applyMovies } from '../../features/movies/reducers'
 
 export default function createRootReducer() {
   return combineReducers({

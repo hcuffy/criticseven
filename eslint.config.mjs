@@ -68,5 +68,21 @@ export default tseslint.config(
 		files: ['client/src/**/*.{js,jsx,ts,tsx}'],
 		...reactHooks.configs.flat.recommended
 	},
+	{
+		files: ['client/src/ui/**/*.{js,jsx,ts,tsx}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: ['**/features/*', '**/features/**'],
+							message: 'ui/ components must not depend on feature code'
+						}
+					]
+				}
+			]
+		}
+	},
 	prettier
 )

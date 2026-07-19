@@ -5,7 +5,7 @@ import { actionCreators } from '../../actions/index'
 import { useTranslation } from 'react-i18next'
 import './styles.css'
 
-const Movies = ({ moviesData, actions }) => {
+const Movies = () => {
   const { t } = useTranslation()
 
   return (

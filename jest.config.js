@@ -1,9 +1,8 @@
-/* eslint-disable indent */
 module.exports = {
   transform: {
-    '^.+\\.js$': 'babel-jest'
+    '^.+\\.[jt]sx?$': 'babel-jest'
   },
-  testMatch: ['<rootDir>/server/**/*.test.{js,jsx}'],
-  moduleFileExtensions: ['js', 'jsx', 'json'],
+  testMatch: ['<rootDir>/server/**/*.test.{js,jsx,ts,tsx}'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   transformIgnorePatterns: ['<rootDir>/node_modules/']
 }

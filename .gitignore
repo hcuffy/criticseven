@@ -7,3 +7,4 @@ yarn-error.log
 scratch
 docs/plan
 doc/plan/*
+.claude/settings.local.json

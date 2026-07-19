@@ -19,7 +19,7 @@ const store = configureStore({
     import.meta.env.DEV ? getDefaultMiddleware().concat(logger) : getDefaultMiddleware()
 })
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
     <App />
   </Provider>

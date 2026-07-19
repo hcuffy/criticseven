@@ -35,12 +35,12 @@ const debug = debugLib('criticseven:server')
 function onListening() {
 	const addr = server.address()
 
-	const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`
+	const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr?.port}`
 
 	debug(`Listening on ${bind}`)
 }
 
-function onError(error) {
+function onError(error: NodeJS.ErrnoException) {
 	if (error.syscall !== 'listen') {
 		throw error
 	}

@@ -1,2 +1,7 @@
 packages:
   - client
+
+onlyBuiltDependencies:
+  - esbuild
+
+minimumReleaseAge: 20160

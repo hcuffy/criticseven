@@ -1,9 +1,8 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import { bindActionCreators } from 'redux'
-import { actionCreators } from '../../actions/index'
+import { bindActionCreators } from '@reduxjs/toolkit'
+import { actionCreators } from '../actions/index'
 import { useTranslation } from 'react-i18next'
-import './styles.css'
 
 const Movies = ({ moviesData, actions }) => {
   const { t } = useTranslation()

@@ -2,6 +2,9 @@ import axios from 'axios'
 
 const apiBaseURL = 'https://api.themoviedb.org/3'
 
+// Errors propagate to the route handlers, which forward them to the central
+// error middleware — no catch-and-swallow here (it used to hang requests and
+// dump axios errors, api_key included, to the console).
 export default class TmdbMovie {
   apiKey: string | undefined
 
@@ -13,86 +16,58 @@ export default class TmdbMovie {
   }
 
   async getPopularMovies() {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 
   async getLatestMovies() {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/movie/latest?api_key=${this.apiKey}&language=${this.language}`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/latest?api_key=${this.apiKey}&language=${this.language}`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 
   async getUpcomingMovies(pageNumber = '1') {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/movie/upcoming?api_key=${this.apiKey}&language=${this.language}&page=${pageNumber}`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/upcoming?api_key=${this.apiKey}&language=${this.language}&page=${pageNumber}`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 
   async getPlayingMovies(pageNumber = '1') {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/movie/now_playing?api_key=${this.apiKey}&language=${this.language}&page=${pageNumber}`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/now_playing?api_key=${this.apiKey}&language=${this.language}&page=${pageNumber}`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 
   async getMovieDetails(movieId: string) {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/movie/${movieId}?api_key=${this.apiKey}&language=${this.language}`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/${movieId}?api_key=${this.apiKey}&language=${this.language}`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 
   async getMovieImages(movieId: string) {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/movie/${movieId}/images?api_key=${this.apiKey}&language=${this.language}`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/${movieId}/images?api_key=${this.apiKey}&language=${this.language}`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 
   async getMovieCredits(movieId: string) {
-    try {
-      const { data } = await axios.get(
-        `${apiBaseURL}/movie/${movieId}/credits?api_key=${this.apiKey}&language=${this.language}`
-      )
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/${movieId}/credits?api_key=${this.apiKey}&language=${this.language}`
+    )
 
-      return data
-    } catch (error) {
-      console.error(error)
-    }
+    return data
   }
 }

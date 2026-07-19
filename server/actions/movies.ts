@@ -1,74 +1,77 @@
-import {Request, Response} from 'express'
+import {NextFunction, Request, Response} from 'express'
+import {
+	toMovieCreditsDTO, toMovieDetailsDTO, toMovieImagesDTO, toMovieListDTO
+} from '../serializers'
 import {TmdbMovie} from '../tmdbWrapper'
 
 const Tmdb = new TmdbMovie(process.env.API_KEY)
 
-export const getPopular = async(request: Request, response: Response) => {
+export const getPopular = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const popularMovies = await Tmdb.getPopularMovies()
 
-		response.send(popularMovies)
+		response.send(toMovieListDTO(popularMovies))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }
 
-export const getLatest = async(request: Request, response: Response) => {
+export const getLatest = async(request: Request, response: Response, next: NextFunction) => {
 	try {
-		const latestMovies = await Tmdb.getLatestMovies()
+		const latestMovie = await Tmdb.getLatestMovies()
 
-		response.send(latestMovies)
+		response.send(toMovieDetailsDTO(latestMovie))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }
 
-export const getUpcoming = async(request: Request, response: Response) => {
+export const getUpcoming = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const upcomingMovies = await Tmdb.getUpcomingMovies()
 
-		response.send(upcomingMovies)
+		response.send(toMovieListDTO(upcomingMovies))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }
 
-export const getDetails = async(request: Request, response: Response) => {
+export const getDetails = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const movieDetails = await Tmdb.getMovieDetails(String(request.query.movieId))
 
-		response.send(movieDetails)
+		response.send(toMovieDetailsDTO(movieDetails))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }
 
-export const getCredits = async(request: Request, response: Response) => {
+export const getCredits = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const movieCredits = await Tmdb.getMovieCredits(String(request.query.movieId))
 
-		response.send(movieCredits)
+		response.send(toMovieCreditsDTO(movieCredits))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }
 
-export const getNowPlaying = async(request: Request, response: Response) => {
+export const getNowPlaying = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const nowPlaying = await Tmdb.getPlayingMovies()
 
-		response.send(nowPlaying)
+		response.send(toMovieListDTO(nowPlaying))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }
 
-export const getImages = async(request: Request, response: Response) => {
+export const getImages = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const movieImages = await Tmdb.getMovieImages(String(request.query.movieId))
 
-		response.send(movieImages)
+		response.send(toMovieImagesDTO(movieImages))
 	} catch (error) {
-		console.error(error)
+		next(error)
 	}
 }

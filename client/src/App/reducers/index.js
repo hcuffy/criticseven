@@ -1,10 +1,8 @@
-import { combineReducers } from 'redux'
-import { connectRouter } from 'connected-react-router'
+import { combineReducers } from '@reduxjs/toolkit'
 import { applyMovies } from '../components/movies/reducers'
 
-export default function createRootReducer(history: History) {
+export default function createRootReducer() {
   return combineReducers({
-    router: connectRouter(history),
     moviesData: applyMovies
   })
 }

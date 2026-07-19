@@ -6,19 +6,23 @@
   "license": "MIT",
   "private": false,
   "main": "./server.js",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "build": "yarn clean && yarn transpile",
+    "build": "pnpm clean && pnpm transpile",
     "clean": "rimraf dist-server",
-    "client": "cd client && yarn start",
-    "debug:dev": "NODE_ENV=development DEBUG=criticseven:* yarn build && yarn server",
-    "dev": "NODE_ENV=development yarn build && yarn server",
-    "heroku-postbuild": "cd client && yarn install && yarn build",
-    "install:client": "cd client && yarn install",
-    "prod": "NODE_ENV=production yarn build && yarn server",
+    "client": "pnpm --filter criticseven-client start",
+    "debug:dev": "NODE_ENV=development DEBUG=criticseven:* pnpm build && pnpm server",
+    "dev": "NODE_ENV=development pnpm build && pnpm server",
+    "heroku-postbuild": "pnpm --filter criticseven-client build",
+    "prod": "NODE_ENV=production pnpm build && pnpm server",
     "server": "node ./dist-server/index",
-    "start": "yarn prod",
-    "start:dev": "concurrently \"yarn dev\" \"yarn client\"",
-    "start:prod": "concurrently \"yarn prod\" \"yarn client\"",
+    "start": "pnpm prod",
+    "start:dev": "concurrently \"pnpm dev\" \"pnpm client\"",
+    "start:prod": "concurrently \"pnpm prod\" \"pnpm client\"",
     "test": "jest -i",
     "transpile": "babel ./server --out-dir dist-server",
     "watch:dev": "nodemon"
@@ -63,7 +67,7 @@
     "rimraf": "^3.0.2"
   },
   "nodemonConfig": {
-    "exec": "yarn dev",
+    "exec": "pnpm dev",
     "watch": [
       "server/*"
     ]

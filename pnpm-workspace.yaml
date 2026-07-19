@@ -5,3 +5,9 @@ onlyBuiltDependencies:
   - esbuild
 
 minimumReleaseAge: 20160
+
+minimumReleaseAgeExclude:
+  - browserslist
+  - typescript
+  - "@typescript/*"
+  - "@types/node"

@@ -4,9 +4,11 @@ import Home from '../containers/Home'
 import Movies from '../containers/Movies'
 import { HOME, MOVIES } from './routes.json'
 
-export default () => (
+const AppRoutes = () => (
   <Routes>
     <Route path={HOME} element={<Home />} />
     <Route path={MOVIES} element={<Movies />} />
   </Routes>
 )
+
+export default AppRoutes

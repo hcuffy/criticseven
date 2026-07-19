@@ -4,7 +4,7 @@ import { bindActionCreators } from '@reduxjs/toolkit'
 import { actionCreators } from '../actions/index'
 import { useTranslation } from 'react-i18next'
 
-const Movies = ({ moviesData, actions }) => {
+const Movies = () => {
   const { t } = useTranslation()
 
   return (

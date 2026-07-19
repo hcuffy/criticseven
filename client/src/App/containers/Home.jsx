@@ -3,7 +3,7 @@ import {connect} from 'react-redux'
 import {bindActionCreators} from '@reduxjs/toolkit'
 import {actionCreators} from '../actions/index'
 
-const Movies = ({moviesData, actions}) => {
+const Movies = () => {
 	return (
   <div className="main_div">
     <h4>HOME</h4>

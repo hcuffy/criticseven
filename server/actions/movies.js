@@ -40,7 +40,7 @@ export const getUpcoming = async(request, response) => {
 
 export const getDetails = async(request, response) => {
 	try {
-		const movieDetails = await Tmdb.getMovieDetails()
+		const movieDetails = await Tmdb.getMovieDetails(request.query.movieId)
 
 		response.send(movieDetails)
 
@@ -52,7 +52,7 @@ export const getDetails = async(request, response) => {
 
 export const getCredits = async(request, response) => {
 	try {
-		const movieCredits = await Tmdb.getMovieCredits()
+		const movieCredits = await Tmdb.getMovieCredits(request.query.movieId)
 
 		response.send(movieCredits)
 
@@ -76,7 +76,7 @@ export const getNowPlaying = async(request, response) => {
 
 export const getImages = async(request, response) => {
 	try {
-		const movieImages = await Tmdb.getMovieImages()
+		const movieImages = await Tmdb.getMovieImages(request.query.movieId)
 
 		response.send(movieImages)
 

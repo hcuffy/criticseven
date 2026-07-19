@@ -2,6 +2,9 @@ node_modules
 .env
 dist-server
 build
+client/dist
 yarn-error.log
 scratch
-/docs/plan/*
+docs/plan
+doc/plan/*
+.claude/settings.local.json

@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import { bindActionCreators } from 'redux'
+import { bindActionCreators } from '@reduxjs/toolkit'
 import { actionCreators } from './actions/index'
 import Root from './containers/Root'
 

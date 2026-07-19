@@ -1,27 +1,14 @@
-// @flow
 import axios from 'axios'
-import type {
-  LatestMovieType,
-  MovieCreditsType,
-  MovieDetailsType,
-  MovieImageType,
-  PlayingMovieType,
-  PopularMovieType,
-  UpcomingMovieType
-} from './types'
 
-const apiBaseURL: string = 'https://api.themoviedb.org/3'
+const apiBaseURL = 'https://api.themoviedb.org/3'
 
 export default class TmdbMovie {
-  apiKey: string
-  language: string
-
-  constructor(apiKey: string, language: string = 'en-US') {
+  constructor(apiKey, language = 'en-US') {
     this.apiKey = apiKey
     this.language = language
   }
 
-  async getPopularMovies(): Promise<PopularMovieType> {
+  async getPopularMovies() {
     try {
       const { data } = await axios.get(
         `${apiBaseURL}/discover/movie?api_key=${this.apiKey}&sort_by=popularity.desc`
@@ -33,7 +20,7 @@ export default class TmdbMovie {
     }
   }
 
-  async getLatestMovies(): Promise<LatestMovieType> {
+  async getLatestMovies() {
     try {
       const { data } = await axios.get(
         `${apiBaseURL}/movie/latest?api_key=${this.apiKey}&language=${this.language}`
@@ -45,7 +32,7 @@ export default class TmdbMovie {
     }
   }
 
-  async getUpcomingMovies(pageNumber: string = '1'): Promise<UpcomingMovieType> {
+  async getUpcomingMovies(pageNumber = '1') {
     try {
       const { data } = await axios.get(
         `${apiBaseURL}/movie/upcoming?api_key=${this.apiKey}&language=${this.language}&page=${pageNumber}`
@@ -57,7 +44,7 @@ export default class TmdbMovie {
     }
   }
 
-  async getPlayingMovies(pageNumber: string = '1'): Promise<PlayingMovieType> {
+  async getPlayingMovies(pageNumber = '1') {
     try {
       const { data } = await axios.get(
         `${apiBaseURL}/movie/now_playing?api_key=${this.apiKey}&language=${this.language}&page=${pageNumber}`
@@ -69,10 +56,10 @@ export default class TmdbMovie {
     }
   }
 
-  async getMovieDetails(movieId: number): Promise<MovieDetailsType> {
+  async getMovieDetails(movieId) {
     try {
       const { data } = await axios.get(
-        `${apiBaseURL}/movie/{movie_id}?api_key=${this.apiKey}&language=${this.language}`
+        `${apiBaseURL}/movie/${movieId}?api_key=${this.apiKey}&language=${this.language}`
       )
 
       return data
@@ -81,10 +68,10 @@ export default class TmdbMovie {
     }
   }
 
-  async getMovieImages(movieId: number): Promise<MovieImageType> {
+  async getMovieImages(movieId) {
     try {
       const { data } = await axios.get(
-        `${apiBaseURL}/movie/{movie_id}/images?api_key=${this.apiKey}&${this.language}`
+        `${apiBaseURL}/movie/${movieId}/images?api_key=${this.apiKey}&language=${this.language}`
       )
 
       return data
@@ -93,10 +80,10 @@ export default class TmdbMovie {
     }
   }
 
-  async getMovieCredits(movieId: number): Promise<MovieCreditsType> {
+  async getMovieCredits(movieId) {
     try {
       const { data } = await axios.get(
-        `${apiBaseURL}/movie/{movie_id}/credits?api_key=${this.apiKey}&${this.language}`
+        `${apiBaseURL}/movie/${movieId}/credits?api_key=${this.apiKey}&language=${this.language}`
       )
 
       return data

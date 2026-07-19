@@ -8,7 +8,9 @@ import path from 'path'
 import {connectToDatabase} from './database/connect'
 import routes from './routes'
 
-connectToDatabase()
+connectToDatabase().catch(error => {
+	console.error('MongoDB connection failed:', error.message)
+})
 
 const app = express()
 

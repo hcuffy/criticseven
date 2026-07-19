@@ -6,6 +6,7 @@ import http from 'http'
 import logger from 'morgan'
 import path from 'path'
 import {connectToDatabase} from './database/connect'
+import {errorHandler} from './middleware/errorHandler'
 import routes from './routes'
 
 connectToDatabase().catch(error => {
@@ -20,6 +21,13 @@ const port = process.env.PORT || 5000
 
 app.use(express.static(path.join(__dirname, 'public')))
 
+// Morgan logs method/url/status only — never request bodies. Auth URLs are
+// additionally stripped of query strings so emails/codes can't reach the log.
+logger.token('url', (request: express.Request) => {
+	const url = request.originalUrl || request.url || ''
+
+	return url.startsWith('/auth') ? url.split('?')[0] : url
+})
 app.use(logger('dev'))
 app.use(express.json())
 app.use(
@@ -29,6 +37,7 @@ app.use(
 )
 app.use(cookieParser())
 app.use('/', routes)
+app.use(errorHandler)
 
 const debug = debugLib('criticseven:server')
 

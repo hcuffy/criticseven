@@ -4,3 +4,4 @@ dist-server
 build
 yarn-error.log
 scratch
+/docs/plan/*

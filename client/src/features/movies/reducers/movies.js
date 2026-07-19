@@ -1,5 +1,5 @@
 import { movieHandlers } from './reducerHandlers'
-import { reducerActionHandler } from '../../../reducers/defaultHandlers.js'
+import { reducerActionHandler } from '../../../helpers/defaultHandlers'
 
 const initialLoadState = {
   movies: []

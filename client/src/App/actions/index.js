@@ -1,4 +1,4 @@
-import * as movieActions from '../components/movies/actions'
+import * as movieActions from '../../features/movies/actions'
 
 export const actionCreators = {
   getMovies: movieActions.getMovies

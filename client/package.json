@@ -13,7 +13,7 @@
     "@blueprintjs/core": "^3.24.0",
     "@blueprintjs/icons": "^3.24.0",
     "@reduxjs/toolkit": "^2.5.0",
-    "axios": "^1.7.0",
+    "axios": "catalog:",
     "i18next": "^24.0.0",
     "lodash": "^4.17.21",
     "normalize.css": "^8.0.1",

@@ -6,3 +6,4 @@ client/dist
 yarn-error.log
 scratch
 docs/plan
+doc/plan/*

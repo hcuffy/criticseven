@@ -4,31 +4,34 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "vite",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "react-router dev",
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@blueprintjs/core": "^3.24.0",
-    "@blueprintjs/icons": "^3.24.0",
-    "@reduxjs/toolkit": "^2.5.0",
-    "axios": "catalog:",
+    "@mantine/core": "^9.0.0",
+    "@mantine/hooks": "^9.0.0",
+    "@react-router/node": "^8.0.0",
+    "@react-router/serve": "^8.0.0",
     "i18next": "^24.0.0",
-    "lodash": "^4.17.21",
     "normalize.css": "^8.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^15.0.0",
-    "react-redux": "^9.2.0",
-    "react-router-dom": "^7.0.0"
+    "react-router": "^8.0.0",
+    "isbot": "^5"
   },
   "devDependencies": {
+    "@react-router/dev": "^8.0.0",
+    "@react-router/fs-routes": "^8.0.0",
+    "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@types/redux-logger": "^3.0.13",
-    "@vitejs/plugin-react": "^5.0.0",
-    "redux-logger": "^3.0.6",
+    "postcss": "^8.4.0",
+    "postcss-preset-mantine": "^1.17.0",
+    "postcss-simple-vars": "^7.0.1",
     "typescript": "^6.0.3",
     "vite": "^7.0.0"
   },

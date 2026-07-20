@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
 	{
 		ignores: [
-			'**/node_modules/', 'dist-server/', 'client/dist/', 'docs/'
+			'**/node_modules/', 'dist-server/', 'client/dist/', 'client/build/', 'client/.react-router/', 'docs/'
 		]
 	},
 	js.configs.recommended,
@@ -27,7 +27,7 @@ export default tseslint.config(
 		}
 	},
 	{
-		files: ['server/**', 'jest.config.js', '*.config.{js,mjs}'],
+		files: ['server/**', 'jest.config.js', '*.config.{js,mjs,cjs}', 'client/*.config.{js,mjs,cjs}'],
 		languageOptions: {
 			globals: {
 				...globals.node
@@ -35,7 +35,7 @@ export default tseslint.config(
 		}
 	},
 	{
-		files: ['jest.config.js'],
+		files: ['jest.config.js', '**/*.cjs'],
 		languageOptions: {
 			sourceType: 'commonjs'
 		}

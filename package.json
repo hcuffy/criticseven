@@ -19,7 +19,7 @@
     "dev": "NODE_ENV=development pnpm build && pnpm server",
     "heroku-postbuild": "pnpm --filter criticseven-client build",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p client",
+    "typecheck": "tsc --noEmit && pnpm --filter criticseven-client typecheck",
     "prod": "NODE_ENV=production pnpm build && pnpm server",
     "server": "node ./dist-server/index",
     "start": "pnpm prod",

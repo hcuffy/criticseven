@@ -2,7 +2,7 @@ import {NextFunction, Request, Response} from 'express'
 import {
 	toMovieCreditsDTO, toMovieDetailsDTO, toMovieImagesDTO, toMovieListDTO
 } from '../serializers'
-import {TmdbMovie} from '../tmdbWrapper'
+import {TmdbMovie} from '../tmdb-wrapper'
 
 const Tmdb = new TmdbMovie(process.env.API_KEY)
 

@@ -3,8 +3,8 @@ import request from 'supertest'
 import { AuthCode } from '../../database/models/AuthCode'
 import { User } from '../../database/models/User'
 import { hashValue } from '../../lib/hash'
-import { clearTestDb, connectTestDb, disconnectTestDb } from '../../testSupport/db'
-import authRoutes from '../../routes/authRoutes'
+import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from '../../test-support/database'
+import authRoutes from '../../routes/auth-routes'
 
 const app = express()
 
@@ -34,15 +34,15 @@ async function seedCode(overrides: Partial<{ used: boolean; expiresAt: Date }> =
 }
 
 beforeAll(async() => {
-	await connectTestDb()
+	await connectTestDatabase()
 })
 
 afterAll(async() => {
-	await disconnectTestDb()
+	await disconnectTestDatabase()
 })
 
 afterEach(async() => {
-	await clearTestDb()
+	await clearTestDatabase()
 })
 
 describe('POST /auth/verify-code', () => {

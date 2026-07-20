@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from 'express'
 import { AuthCode } from '../database/models/AuthCode'
 import { User } from '../database/models/User'
 import { hashValue, verifyHash } from '../lib/hash'
-import { isRateLimited, recordAttempt } from '../lib/rateLimit'
+import { isRateLimited, recordAttempt } from '../lib/rate-limit'
 import { verifyTurnstileToken } from '../lib/turnstile'
 
 const CODE_TTL_MINUTES = 10

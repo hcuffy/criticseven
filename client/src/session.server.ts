@@ -39,8 +39,7 @@ export async function getSession(request: Request) {
 	return sessionStorage.getSession(request.headers.get('Cookie'))
 }
 
-// Reusable gate for future routes (Phase 5: opinion/review/vote creation) —
-// call at the top of a loader/action and use the returned identity, or let
+// Call at the top of a loader/action and use the returned identity, or let
 // the thrown 401 propagate to the route's error boundary.
 export async function requireSession(request: Request): Promise<SessionData> {
 	const session = await getSession(request)

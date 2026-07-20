@@ -14,6 +14,14 @@ export interface SessionData {
 	username: string
 }
 
+// Fail closed like the Turnstile check (server/lib/turnstile.ts): a missing
+// secret in production must crash the process, not silently sign session
+// cookies with a value that sits in source control — that would let anyone
+// who has read the repo forge a valid session for any userId/username.
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+	throw new Error('SESSION_SECRET must be set in production')
+}
+
 const sessionSecret = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me'
 
 export const sessionStorage = createCookieSessionStorage<SessionData>({

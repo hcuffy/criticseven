@@ -124,17 +124,29 @@ export const verifyCode = async(request: Request, response: Response, next: Next
 			return
 		}
 
+		// Atomic claim: the match above only proves the candidate *was* unused
+		// at read time. Two concurrent requests can both match the same
+		// candidate before either writes `used: true`, so the actual single-use
+		// guarantee has to be this conditional update, not the find above.
+		// Only the request that flips `used: false -> true` gets a document
+		// back; a second, concurrent request loses the race and matchedCode
+		// comes back null.
+		const matchedCode = await AuthCode.findOneAndUpdate(
+			{ _id: matchedCandidateId, used: false },
+			{ used: true }
+		)
+
+		if (!matchedCode) {
+			response.status(401).json(GENERIC_VERIFY_FAILURE)
+			return
+		}
+
 		const user = await User.findOne({ email })
 
 		if (!user) {
 			response.status(401).json(GENERIC_VERIFY_FAILURE)
 			return
 		}
-
-		// Marked used rather than deleted — keeps the reuse check (`used: false`
-		// above) authoritative without racing the TTL sweep, and leaves a trail
-		// until expiry cleans it up.
-		await AuthCode.updateOne({ _id: matchedCandidateId }, { used: true })
 
 		response.status(200).json({ valid: true, userId: user.id, username: user.username })
 	} catch (error) {

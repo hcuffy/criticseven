@@ -118,6 +118,20 @@ describe('POST /auth/verify-code', () => {
 		expect(sixthAttempt.body).toEqual(GENERIC_FAILURE)
 	})
 
+	test('race condition: two concurrent requests with the same valid code, only one succeeds', async() => {
+		await seedUser()
+		await seedCode()
+
+		const [first, second] = await Promise.all([
+			request(app).post('/auth/verify-code').send({ email: EMAIL, code: CODE }),
+			request(app).post('/auth/verify-code').send({ email: EMAIL, code: CODE })
+		])
+
+		const statuses = [first.status, second.status].sort()
+
+		expect(statuses).toEqual([200, 401])
+	})
+
 	test('missing fields return a distinct 400, not the generic-failure body', async() => {
 		const response = await request(app).post('/auth/verify-code').send({ email: EMAIL })
 

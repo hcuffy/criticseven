@@ -1,8 +1,8 @@
 import axios from 'axios'
-import TmdbMovie from '../movieDBWrapper'
+import TmdbMovie from '../movie-db-wrapper'
 import {
 	API_KEY, fakeCredits, fakeImageInfo, fakeMovie, fakeMovieList
-} from './mockData'
+} from './mock-data'
 
 jest.mock('axios')
 

@@ -1,7 +1,7 @@
 import express from 'express'
 import {getPopular} from '../actions'
-import authRoutes from './authRoutes'
-import movieRoutes from './movieRoutes'
+import authRoutes from './auth-routes'
+import movieRoutes from './movie-routes'
 
 const router = express.Router()
 

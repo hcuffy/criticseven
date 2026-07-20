@@ -6,7 +6,7 @@ import http from 'http'
 import logger from 'morgan'
 import path from 'path'
 import {connectToDatabase} from './database/connect'
-import {errorHandler} from './middleware/errorHandler'
+import {errorHandler} from './middleware/error-handler'
 import routes from './routes'
 
 connectToDatabase().catch(error => {

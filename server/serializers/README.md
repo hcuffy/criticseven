@@ -15,4 +15,8 @@ TrailerOpinion, Review, Vote, etc. in Phase 2+):
 - Route handlers call the DTO before `response.send()` — raw model documents
   and raw upstream API payloads must not be sent directly.
 
-Planned example: `UserPublicDTO { username, honestyScore, isLowTrust }`.
+Example (built in Phase 3): `UserPublicDTO { username, honestyScore, isLowTrust, isPhoneVerified }`
+— `isPhoneVerified` feeds a future "Verified" badge the same way `isLowTrust`
+feeds the low-trust badge (opposite signal, same DTO-exposure pattern).
+`phoneNumberHash` never appears here — like auth-code hashes, it's not
+something the client needs.

@@ -10,7 +10,7 @@ export const getPopular = async(request: Request, response: Response, next: Next
 	try {
 		const popularMovies = await Tmdb.getPopularMovies()
 
-		response.send(toMovieListDTO(popularMovies))
+		response.send(await toMovieListDTO(popularMovies))
 	} catch (error) {
 		next(error)
 	}
@@ -20,7 +20,7 @@ export const getLatest = async(request: Request, response: Response, next: NextF
 	try {
 		const latestMovie = await Tmdb.getLatestMovies()
 
-		response.send(toMovieDetailsDTO(latestMovie))
+		response.send(await toMovieDetailsDTO(latestMovie))
 	} catch (error) {
 		next(error)
 	}
@@ -30,7 +30,7 @@ export const getUpcoming = async(request: Request, response: Response, next: Nex
 	try {
 		const upcomingMovies = await Tmdb.getUpcomingMovies()
 
-		response.send(toMovieListDTO(upcomingMovies))
+		response.send(await toMovieListDTO(upcomingMovies))
 	} catch (error) {
 		next(error)
 	}
@@ -40,7 +40,7 @@ export const getDetails = async(request: Request, response: Response, next: Next
 	try {
 		const movieDetails = await Tmdb.getMovieDetails(String(request.query.movieId))
 
-		response.send(toMovieDetailsDTO(movieDetails))
+		response.send(await toMovieDetailsDTO(movieDetails))
 	} catch (error) {
 		next(error)
 	}
@@ -60,7 +60,7 @@ export const getNowPlaying = async(request: Request, response: Response, next: N
 	try {
 		const nowPlaying = await Tmdb.getPlayingMovies()
 
-		response.send(toMovieListDTO(nowPlaying))
+		response.send(await toMovieListDTO(nowPlaying))
 	} catch (error) {
 		next(error)
 	}

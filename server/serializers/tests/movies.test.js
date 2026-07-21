@@ -19,8 +19,8 @@ const tmdbMovie = {
 }
 
 describe('movie serializers allowlist', () => {
-	test('summary DTO drops non-allowlisted TMDB fields', () => {
-		const dto = toMovieSummaryDTO(tmdbMovie)
+	test('summary DTO drops non-allowlisted TMDB fields', async() => {
+		const dto = await toMovieSummaryDTO(tmdbMovie)
 
 		expect(Object.keys(dto).sort()).toEqual([
 			'backdrop_path', 'genre_ids', 'id', 'overview', 'poster_path',
@@ -29,8 +29,8 @@ describe('movie serializers allowlist', () => {
 		expect(dto.title).toBe('Fight Club')
 	})
 
-	test('details DTO drops non-allowlisted TMDB fields', () => {
-		const dto = toMovieDetailsDTO({
+	test('details DTO drops non-allowlisted TMDB fields', async() => {
+		const dto = await toMovieDetailsDTO({
 			...tmdbMovie, runtime: 139, tagline: 'Mischief.', genres: [{id: 18, name: 'Drama'}], budget: 63000000, imdb_id: 'tt0137523'
 		})
 
@@ -40,8 +40,8 @@ describe('movie serializers allowlist', () => {
 		])
 	})
 
-	test('list DTO shapes pagination and maps results', () => {
-		const dto = toMovieListDTO({
+	test('list DTO shapes pagination and maps results', async() => {
+		const dto = await toMovieListDTO({
 			page: 1, total_pages: 10, total_results: 200, results: [tmdbMovie], dates: {maximum: 'x', minimum: 'y'}
 		})
 

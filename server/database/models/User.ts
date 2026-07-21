@@ -17,7 +17,10 @@ export interface UserDocument extends mongoose.Document {
 const userSchema = new Schema<UserDocument>({
 	username: { type: String, required: true, unique: true },
 	email: { type: String, required: true, unique: true },
-	honestyScore: { type: Number, default: 0 },
+	// 50 (neutral midpoint) not 0 — a brand-new user with no HonestyLog
+	// history hasn't done anything dishonest yet, so they shouldn't start
+	// out already below the low-trust badge threshold.
+	honestyScore: { type: Number, default: 50 },
 	isPhoneVerified: { type: Boolean, default: false },
 	phoneNumberHash: { type: String, default: null },
 	createdAt: { type: Date, default: Date.now }

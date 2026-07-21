@@ -20,3 +20,17 @@ Example (built in Phase 3): `UserPublicDTO { username, honestyScore, isLowTrust,
 feeds the low-trust badge (opposite signal, same DTO-exposure pattern).
 `phoneNumberHash` never appears here — like auth-code hashes, it's not
 something the client needs.
+
+Built in Phase 2 (schema): `MoviePublicDTO`, `TrailerOpinionPublicDTO`,
+`ReviewPublicDTO`, `VotePublicDTO`, `ConfigPublicDTO`. Notes specific to
+these:
+
+- `MoviePublicDTO` drops `metadata` — it's an opaque cached upstream blob,
+  not a curated response shape.
+- `VotePublicDTO` drops `voterId` — a public listing that names the voter on
+  every vote is the same "who voted on what" deanonymization risk the
+  `HonestyLog` rule above rules out, just at the Vote level instead.
+- `HonestyLog` has no DTO at all — it is never sent to the client in any
+  shape, per the rule above.
+- `ConfigPublicDTO` exposes exactly `lowTrustBadgeThreshold` and
+  `voteWeightFloor` — the two fields the rule above allowlists from `Config`.

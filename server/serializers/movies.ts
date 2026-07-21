@@ -3,7 +3,13 @@
  * "Standing Requirement — Data Minimization" in docs/plan).
  * Every field sent to the client is named here; anything TMDB adds
  * upstream is dropped unless deliberately allowlisted.
+ *
+ * poster_path/backdrop_path are resolved through server/lib/image-service.ts
+ * (Phase 4) — they are full, ready-to-use image URLs here, not the raw
+ * TMDB-relative paths TMDB itself returns.
  */
+
+import { getBackdropUrl, getPosterUrl } from '../lib/image-service'
 
 type TmdbPayload = Record<string, unknown>
 
@@ -67,13 +73,18 @@ export interface MovieImagesDTO {
 	posters: MovieImageDTO[]
 }
 
-export function toMovieSummaryDTO(movie: TmdbPayload): MovieSummaryDTO {
+export async function toMovieSummaryDTO(movie: TmdbPayload): Promise<MovieSummaryDTO> {
+	const [posterUrl, backdropUrl] = await Promise.all([
+		getPosterUrl((movie.poster_path as string) ?? null),
+		getBackdropUrl((movie.backdrop_path as string) ?? null)
+	])
+
 	return {
 		id: movie.id as number,
 		title: movie.title as string,
 		overview: movie.overview as string,
-		poster_path: (movie.poster_path as string) ?? null,
-		backdrop_path: (movie.backdrop_path as string) ?? null,
+		poster_path: posterUrl,
+		backdrop_path: backdropUrl,
 		release_date: movie.release_date as string,
 		vote_average: movie.vote_average as number,
 		vote_count: movie.vote_count as number,
@@ -81,13 +92,18 @@ export function toMovieSummaryDTO(movie: TmdbPayload): MovieSummaryDTO {
 	}
 }
 
-export function toMovieDetailsDTO(movie: TmdbPayload): MovieDetailsDTO {
+export async function toMovieDetailsDTO(movie: TmdbPayload): Promise<MovieDetailsDTO> {
+	const [posterUrl, backdropUrl] = await Promise.all([
+		getPosterUrl((movie.poster_path as string) ?? null),
+		getBackdropUrl((movie.backdrop_path as string) ?? null)
+	])
+
 	return {
 		id: movie.id as number,
 		title: movie.title as string,
 		overview: movie.overview as string,
-		poster_path: (movie.poster_path as string) ?? null,
-		backdrop_path: (movie.backdrop_path as string) ?? null,
+		poster_path: posterUrl,
+		backdrop_path: backdropUrl,
 		release_date: movie.release_date as string,
 		vote_average: movie.vote_average as number,
 		vote_count: movie.vote_count as number,
@@ -97,14 +113,14 @@ export function toMovieDetailsDTO(movie: TmdbPayload): MovieDetailsDTO {
 	}
 }
 
-export function toMovieListDTO(payload: TmdbPayload): MovieListDTO {
+export async function toMovieListDTO(payload: TmdbPayload): Promise<MovieListDTO> {
 	const results = (payload.results as TmdbPayload[]) ?? []
 
 	return {
 		page: payload.page as number,
 		total_pages: payload.total_pages as number,
 		total_results: payload.total_results as number,
-		results: results.map(toMovieSummaryDTO)
+		results: await Promise.all(results.map(toMovieSummaryDTO))
 	}
 }
 

@@ -34,3 +34,10 @@ these:
   shape, per the rule above.
 - `ConfigPublicDTO` exposes exactly `lowTrustBadgeThreshold` and
   `voteWeightFloor` — the two fields the rule above allowlists from `Config`.
+
+Built in Phase 4 (image service): `MovieSummaryDTO`/`MovieDetailsDTO`'s
+`poster_path`/`backdrop_path` are resolved through
+`server/lib/image-service.ts` before they leave this file — they are full,
+ready-to-use `<img src>` URLs, not TMDB-relative path fragments the way TMDB
+itself returns them. Any component consuming these fields should render them
+directly, not prepend a TMDB image base URL.

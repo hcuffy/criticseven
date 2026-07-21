@@ -1,3 +1,4 @@
+import { DEFAULT_LOW_TRUST_BADGE_THRESHOLD } from '../database/models/config'
 import { UserDocument } from '../database/models/User'
 
 export interface UserPublicDTO {
@@ -7,15 +8,17 @@ export interface UserPublicDTO {
 	isPhoneVerified: boolean
 }
 
-// Placeholder until the Config model (docs/plan) exists — mirrors its
-// planned lowTrustBadgeThreshold default of 30.
-const LOW_TRUST_THRESHOLD = 30
-
-export function toUserPublicDTO(user: UserDocument): UserPublicDTO {
+// Threshold defaults to Config's default rather than reading Config here —
+// DTOs stay synchronous and DB-free; callers that already have the live
+// Config document (it's a single cached lookup) pass its value in.
+export function toUserPublicDTO(
+	user: UserDocument,
+	lowTrustBadgeThreshold: number = DEFAULT_LOW_TRUST_BADGE_THRESHOLD
+): UserPublicDTO {
 	return {
 		username: user.username,
 		honestyScore: user.honestyScore,
-		isLowTrust: user.honestyScore < LOW_TRUST_THRESHOLD,
+		isLowTrust: user.honestyScore < lowTrustBadgeThreshold,
 		isPhoneVerified: user.isPhoneVerified
 	}
 }

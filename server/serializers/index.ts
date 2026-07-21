@@ -1,1 +1,6 @@
+export * from './config'
+export * from './movie'
 export * from './movies'
+export * from './review'
+export * from './trailer-opinion'
+export * from './vote'

@@ -1,4 +1,5 @@
 import React from 'react'
+import '../features/movies/styles.css'
 
 export default function Home() {
   return (

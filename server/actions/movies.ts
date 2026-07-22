@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response} from 'express'
 import {
-	toMovieCreditsDTO, toMovieDetailsDTO, toMovieImagesDTO, toMovieListDTO
+	toMovieCreditsDTO, toMovieDetailsDTO, toMovieImagesDTO, toMovieListDTO, toMovieVideosDTO
 } from '../serializers'
 import {TmdbMovie} from '../tmdb-wrapper'
 
@@ -71,6 +71,16 @@ export const getImages = async(request: Request, response: Response, next: NextF
 		const movieImages = await Tmdb.getMovieImages(String(request.query.movieId))
 
 		response.send(toMovieImagesDTO(movieImages))
+	} catch (error) {
+		next(error)
+	}
+}
+
+export const getVideos = async(request: Request, response: Response, next: NextFunction) => {
+	try {
+		const movieVideos = await Tmdb.getMovieVideos(String(request.query.movieId))
+
+		response.send(toMovieVideosDTO(movieVideos))
 	} catch (error) {
 		next(error)
 	}

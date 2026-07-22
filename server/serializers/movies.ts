@@ -73,6 +73,20 @@ export interface MovieImagesDTO {
 	posters: MovieImageDTO[]
 }
 
+export interface MovieVideoDTO {
+	id: string
+	key: string
+	site: string
+	type: string
+	name: string
+	official: boolean
+}
+
+export interface MovieVideosDTO {
+	id: number
+	results: MovieVideoDTO[]
+}
+
 export async function toMovieSummaryDTO(movie: TmdbPayload): Promise<MovieSummaryDTO> {
 	const [posterUrl, backdropUrl] = await Promise.all([
 		getPosterUrl((movie.poster_path as string) ?? null),
@@ -162,5 +176,26 @@ export function toMovieImagesDTO(payload: TmdbPayload): MovieImagesDTO {
 		id: payload.id as number,
 		backdrops: ((payload.backdrops as TmdbPayload[]) ?? []).map(toMovieImageDTO),
 		posters: ((payload.posters as TmdbPayload[]) ?? []).map(toMovieImageDTO)
+	}
+}
+
+function toMovieVideoDTO(video: TmdbPayload): MovieVideoDTO {
+	return {
+		id: video.id as string,
+		key: video.key as string,
+		site: video.site as string,
+		type: video.type as string,
+		name: video.name as string,
+		official: (video.official as boolean) ?? false
+	}
+}
+
+// Movie.trailerUrl (the app's own field, docs/plan Phase 5 item 1) is the
+// primary trailer source once something populates it; this stays as the
+// fallback for movies that don't have one yet.
+export function toMovieVideosDTO(payload: TmdbPayload): MovieVideosDTO {
+	return {
+		id: payload.id as number,
+		results: ((payload.results as TmdbPayload[]) ?? []).map(toMovieVideoDTO)
 	}
 }

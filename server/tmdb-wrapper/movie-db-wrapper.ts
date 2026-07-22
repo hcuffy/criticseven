@@ -70,4 +70,12 @@ export default class TmdbMovie {
 
     return data
   }
+
+  async getMovieVideos(movieId: string) {
+    const { data } = await axios.get(
+      `${apiBaseURL}/movie/${movieId}/videos?api_key=${this.apiKey}&language=${this.language}`
+    )
+
+    return data
+  }
 }

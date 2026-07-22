@@ -26,9 +26,11 @@ const voteSchema = new Schema<VoteDocument>({
 // Enforces one vote per user per target at the database level, not just app logic.
 voteSchema.index({ voterId: 1, targetType: 1, targetId: 1 }, { unique: true })
 
-// Matches the per-voter rate-limit window query in server/actions/votes.ts
-// (count a voter's votes in the last hour) — the unique index above only
-// has voterId as a usable prefix for that query, not createdAt.
-voteSchema.index({ voterId: 1, createdAt: 1 })
+// Backs the netVoteCount aggregation (server/lib/vote-counts.ts), which
+// matches on {targetType, targetId: {$in: [...]}} with no voterId — the
+// unique index above can't serve that (voterId isn't in the query at all),
+// so it was running a full collection scan on every opinions/reviews page
+// load (audit #13, confirmed via .explain()).
+voteSchema.index({ targetType: 1, targetId: 1 })
 
 export const Vote = mongoose.models.Vote || mongoose.model<VoteDocument>('Vote', voteSchema)

@@ -61,6 +61,7 @@ export default function VoteButtons({ targetType, targetId, netVoteCount, viewer
         color={optimisticViewerVote === 1 ? 'orange' : 'gray'}
         aria-label="Upvote"
         aria-pressed={optimisticViewerVote === 1}
+        disabled={isPendingForThisTarget}
         onClick={() => vote(1)}
       >
         ▲
@@ -73,6 +74,7 @@ export default function VoteButtons({ targetType, targetId, netVoteCount, viewer
         color={optimisticViewerVote === -1 ? 'blue' : 'gray'}
         aria-label="Downvote"
         aria-pressed={optimisticViewerVote === -1}
+        disabled={isPendingForThisTarget}
         onClick={() => vote(-1)}
       >
         ▼

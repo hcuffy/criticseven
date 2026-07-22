@@ -6,6 +6,20 @@ import {TmdbMovie} from '../tmdb-wrapper'
 
 const Tmdb = new TmdbMovie(process.env.API_KEY)
 
+// TMDB ids are always positive integers. request.query.movieId is otherwise
+// unknown-shaped (Express parses repeated query keys as an array, and an
+// absent key as undefined) — String(request.query.movieId) on either of
+// those produces a value like "undefined" or "1,2" that gets interpolated
+// straight into the upstream URL (server/tmdb-wrapper/movie-db-wrapper.ts)
+// with no validation at all.
+function parseMovieId(value: unknown): string | null {
+	return typeof value === 'string' && /^\d+$/.test(value) ? value : null
+}
+
+const INVALID_MOVIE_ID = {
+	error: { code: 'INVALID_MOVIE_ID', message: 'movieId must be a numeric TMDB id' }
+}
+
 export const getPopular = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const popularMovies = await Tmdb.getPopularMovies()
@@ -38,7 +52,14 @@ export const getUpcoming = async(request: Request, response: Response, next: Nex
 
 export const getDetails = async(request: Request, response: Response, next: NextFunction) => {
 	try {
-		const movieDetails = await Tmdb.getMovieDetails(String(request.query.movieId))
+		const movieId = parseMovieId(request.query.movieId)
+
+		if (!movieId) {
+			response.status(400).json(INVALID_MOVIE_ID)
+			return
+		}
+
+		const movieDetails = await Tmdb.getMovieDetails(movieId)
 
 		response.send(await toMovieDetailsDTO(movieDetails))
 	} catch (error) {
@@ -48,7 +69,14 @@ export const getDetails = async(request: Request, response: Response, next: Next
 
 export const getCredits = async(request: Request, response: Response, next: NextFunction) => {
 	try {
-		const movieCredits = await Tmdb.getMovieCredits(String(request.query.movieId))
+		const movieId = parseMovieId(request.query.movieId)
+
+		if (!movieId) {
+			response.status(400).json(INVALID_MOVIE_ID)
+			return
+		}
+
+		const movieCredits = await Tmdb.getMovieCredits(movieId)
 
 		response.send(toMovieCreditsDTO(movieCredits))
 	} catch (error) {
@@ -68,7 +96,14 @@ export const getNowPlaying = async(request: Request, response: Response, next: N
 
 export const getImages = async(request: Request, response: Response, next: NextFunction) => {
 	try {
-		const movieImages = await Tmdb.getMovieImages(String(request.query.movieId))
+		const movieId = parseMovieId(request.query.movieId)
+
+		if (!movieId) {
+			response.status(400).json(INVALID_MOVIE_ID)
+			return
+		}
+
+		const movieImages = await Tmdb.getMovieImages(movieId)
 
 		response.send(toMovieImagesDTO(movieImages))
 	} catch (error) {
@@ -78,7 +113,14 @@ export const getImages = async(request: Request, response: Response, next: NextF
 
 export const getVideos = async(request: Request, response: Response, next: NextFunction) => {
 	try {
-		const movieVideos = await Tmdb.getMovieVideos(String(request.query.movieId))
+		const movieId = parseMovieId(request.query.movieId)
+
+		if (!movieId) {
+			response.status(400).json(INVALID_MOVIE_ID)
+			return
+		}
+
+		const movieVideos = await Tmdb.getMovieVideos(movieId)
 
 		response.send(toMovieVideosDTO(movieVideos))
 	} catch (error) {

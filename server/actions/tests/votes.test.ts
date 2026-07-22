@@ -1,8 +1,8 @@
 import cookieParser from 'cookie-parser'
 import express from 'express'
-import mongoose from 'mongoose'
 import request from 'supertest'
 import { HonestyLog } from '../../database/models/honesty-log'
+import { RateLimitEvent } from '../../database/models/RateLimitEvent'
 import { TrailerOpinion } from '../../database/models/trailer-opinion'
 import { User, UserDocument } from '../../database/models/User'
 import { Vote } from '../../database/models/vote'
@@ -185,17 +185,14 @@ describe('POST /votes', () => {
 		expect(votesForTarget).toHaveLength(1)
 	})
 
-	test('rate limits after 100 votes in the last hour', async() => {
+	test('rate limits after 100 vote attempts in the last hour', async() => {
 		const voter = await seedUser()
 
-		await Vote.insertMany(
-			Array.from({ length: 100 }, () => ({
-				voterId: voter.id,
-				targetType: 'opinion',
-				targetId: new mongoose.Types.ObjectId(),
-				voteValue: 1,
-				voterWeightAtVote: 1
-			}))
+		// Seeded as recorded attempts (audit #8 fix), not live Vote rows —
+		// the limit is on attempts, independent of whether any of them still
+		// have a surviving Vote document.
+		await RateLimitEvent.insertMany(
+			Array.from({ length: 100 }, () => ({ scope: 'vote', userId: voter.id }))
 		)
 
 		const response = await request(app)
@@ -204,6 +201,56 @@ describe('POST /votes', () => {
 			.send({ targetType: 'opinion', targetId: '507f1f77bcf86cd799439011', voteValue: 1 })
 
 		expect(response.status).toBe(429)
+	})
+
+	test('rate limits DELETE /votes too, sharing the same budget as POST (audit #8)', async() => {
+		const voter = await seedUser()
+
+		await RateLimitEvent.insertMany(
+			Array.from({ length: 100 }, () => ({ scope: 'vote', userId: voter.id }))
+		)
+
+		const response = await request(app)
+			.delete('/votes')
+			.set('Cookie', sessionCookieFor(voter))
+			.send({ targetType: 'opinion', targetId: '507f1f77bcf86cd799439011' })
+
+		expect(response.status).toBe(429)
+	})
+
+	test('vote-then-unvote cycling cannot evade the rate limit (audit #8)', async() => {
+		const author = await seedUser({ username: 'author', email: 'author@example.com' })
+		const voter = await seedUser({ username: 'voter', email: 'voter@example.com' })
+		const opinion = await seedOpinion(author.id)
+		const cookie = sessionCookieFor(voter)
+
+		let sawRateLimited = false
+
+		// 60 cycles is 120 attempts, over the shared 100/hr cap, even though
+		// at most one Vote document ever exists at a time — the previous
+		// live-Vote-row count would have let every single cycle through.
+		for (let cycle = 0; cycle < 60 && !sawRateLimited; cycle++) {
+			const voteResponse = await request(app)
+				.post('/votes')
+				.set('Cookie', cookie)
+				.send({ targetType: 'opinion', targetId: opinion.id, voteValue: 1 })
+
+			if (voteResponse.status === 429) {
+				sawRateLimited = true
+				break
+			}
+
+			const deleteResponse = await request(app)
+				.delete('/votes')
+				.set('Cookie', cookie)
+				.send({ targetType: 'opinion', targetId: opinion.id })
+
+			if (deleteResponse.status === 429) {
+				sawRateLimited = true
+			}
+		}
+
+		expect(sawRateLimited).toBe(true)
 	})
 })
 
@@ -242,6 +289,39 @@ describe('voterWeightAtVote snapshot', () => {
 		expect(logs[1].delta).toBeCloseTo(25) // 1 * 1.0 * 25
 		expect(Math.abs(logs[1].delta)).toBeGreaterThan(Math.abs(logs[0].delta))
 	})
+
+	test('a vote change reuses the original cast-time weight, not the voter\'s current score (CodeRabbit)', async() => {
+		const author = await seedUser({ username: 'author', email: 'author@example.com' })
+		const voter = await seedUser({ username: 'voter', email: 'voter@example.com', honestyScore: 100 })
+		const opinion = await seedOpinion(author.id)
+		const cookie = sessionCookieFor(voter)
+
+		await request(app).post('/votes').set('Cookie', cookie).send({ targetType: 'opinion', targetId: opinion.id, voteValue: 1 })
+
+		// The voter's score drops to the floor after casting — a change must
+		// not re-price the already-cast vote against this new value.
+		await User.findByIdAndUpdate(voter.id, { honestyScore: 0 })
+
+		await request(app).post('/votes').set('Cookie', cookie).send({ targetType: 'opinion', targetId: opinion.id, voteValue: -1 })
+
+		const voteRow = await Vote.findOne({ voterId: voter.id, targetType: 'opinion', targetId: opinion.id })
+
+		expect(voteRow?.voterWeightAtVote).toBe(1) // unchanged from the original cast, not recomputed to ~0.2
+
+		const deleteResponse = await request(app)
+			.delete('/votes')
+			.set('Cookie', cookie)
+			.send({ targetType: 'opinion', targetId: opinion.id })
+
+		expect(deleteResponse.status).toBe(204)
+
+		// Create -> change -> remove, with a shared weight throughout, nets to
+		// exactly the baseline — not just close to it (see audit #1's fix).
+		const score = await waitForHonestyScore(author.id, current => current === 50)
+
+		expect(score).toBe(50)
+		expect(await HonestyLog.countDocuments({ userId: author.id })).toBe(0)
+	})
 })
 
 describe('honesty score recalculation', () => {
@@ -272,7 +352,18 @@ describe('honesty score recalculation', () => {
 		await request(app).post('/votes').set('Cookie', cookie).send({ targetType: 'opinion', targetId: opinion.id, voteValue: -1 })
 		const score = await waitForHonestyScore(author.id, current => current < 50)
 
-		expect(score).toBeLessThan(50)
+		// Exact, not just "less than 50": FIX 1 replaces (not appends to) the
+		// single HonestyLog entry tied to this vote, so there's exactly one
+		// entry after the change (delta = -1 * 1.0 * 25) and its weighted
+		// "average" is just that one value, with no timing-dependent wobble.
+		// The weak toBeLessThan(50) this replaced would have passed just as
+		// happily on the pre-fix, provably wrong value of 37.5 (see the audit).
+		expect(score).toBe(25)
+
+		const logs = await HonestyLog.find({ userId: author.id })
+
+		expect(logs).toHaveLength(1)
+		expect(logs[0].delta).toBe(-25)
 	})
 
 	test('triggers on vote delete — reverses the honesty-log contribution', async() => {
@@ -291,18 +382,16 @@ describe('honesty score recalculation', () => {
 
 		expect(deleteResponse.status).toBe(204)
 
-		// The create (+25) and reversal (-25) entries land milliseconds apart,
-		// so their time-decay weights aren't bit-for-bit identical — the score
-		// settles very close to, but not always exactly, the 50 baseline.
-		const score = await waitForHonestyScore(author.id, current => Math.abs(current - 50) < 0.01)
+		// The HonestyLog entry tied to this vote is removed outright (not
+		// offset by a reversal entry) — with no entries left for this author,
+		// the score is exactly the baseline, not just close to it.
+		const score = await waitForHonestyScore(author.id, current => current === 50)
 
-		expect(score).toBeCloseTo(50, 1)
+		expect(score).toBe(50)
 
-		const logs = await HonestyLog.find({ userId: author.id }).sort({ createdAt: 1 })
+		const logs = await HonestyLog.find({ userId: author.id })
 
-		expect(logs).toHaveLength(2)
-		expect(logs[1].reason).toBe('upvote removed')
-		expect(logs[1].delta).toBeCloseTo(-25)
+		expect(logs).toHaveLength(0)
 	})
 })
 
@@ -341,6 +430,30 @@ describe('DELETE /votes', () => {
 
 		expect(response.status).toBe(204)
 		expect(await Vote.countDocuments({ targetType: 'opinion', targetId: opinion.id })).toBe(0)
+	})
+
+	test('ignores a body-supplied voterId — cannot remove someone else\'s vote by curling directly (audit #5)', async() => {
+		const author = await seedUser({ username: 'author', email: 'author@example.com' })
+		const realVoter = await seedUser({ username: 'real-voter', email: 'real-voter@example.com' })
+		const impersonationTarget = await seedUser({ username: 'someone-else', email: 'else@example.com' })
+		const opinion = await seedOpinion(author.id)
+
+		await request(app).post('/votes').set('Cookie', sessionCookieFor(realVoter)).send({
+			targetType: 'opinion', targetId: opinion.id, voteValue: 1
+		})
+
+		// The attacker has their OWN session (realVoter's), but forges a
+		// different voterId in the body hoping to delete someone else's vote
+		// — or, as here, one that doesn't even exist for that forged id.
+		const response = await request(app)
+			.delete('/votes')
+			.set('Cookie', sessionCookieFor(realVoter))
+			.send({ voterId: impersonationTarget.id, targetType: 'opinion', targetId: opinion.id })
+
+		// Succeeds — but removes realVoter's own vote (the cookie's real
+		// owner), not anything belonging to the forged voterId.
+		expect(response.status).toBe(204)
+		expect(await Vote.countDocuments({ voterId: realVoter.id, targetType: 'opinion', targetId: opinion.id })).toBe(0)
 	})
 })
 

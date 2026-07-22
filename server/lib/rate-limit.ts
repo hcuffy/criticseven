@@ -28,3 +28,26 @@ export async function isRateLimited(scope: string, email: string, ip: string): P
 export async function recordAttempt(scope: string, email: string, ip: string): Promise<void> {
 	await RateLimitEvent.create({ scope, email, ip })
 }
+
+/*
+ * Per-user counterpart to isRateLimited/recordAttempt above, for
+ * already-authenticated actions with no email/ip involved (votes). Counts
+ * permanently-recorded attempts, not surviving rows in whatever resource the
+ * limit is meant to bound — server/actions/votes.ts previously counted
+ * live Vote documents, which a create-then-delete cycle could use to evade
+ * the cap entirely (audit #8). limit/window are passed in rather than
+ * hardcoded here since different callers may need different budgets.
+ */
+export async function isUserRateLimited(
+	scope: string, userId: string, limit: number, windowMs: number
+): Promise<boolean> {
+	const count = await RateLimitEvent.countDocuments({
+		scope, userId, createdAt: { $gte: new Date(Date.now() - windowMs) }
+	})
+
+	return count >= limit
+}
+
+export async function recordUserAttempt(scope: string, userId: string): Promise<void> {
+	await RateLimitEvent.create({ scope, userId })
+}

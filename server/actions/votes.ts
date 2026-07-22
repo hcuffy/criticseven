@@ -7,6 +7,7 @@ import { User } from '../database/models/User'
 import { Vote, VoteDocument, VoteTargetType } from '../database/models/vote'
 import { getConfig } from '../lib/config'
 import { computeVoterWeight, enqueueHonestyScoreRecalculation } from '../lib/honesty-score'
+import { isUserRateLimited, recordUserAttempt } from '../lib/rate-limit'
 import { toVotePublicDTO } from '../serializers'
 import { getAuthenticatedUserId, SESSION_COOKIE_NAME } from '../session'
 
@@ -19,6 +20,9 @@ import { getAuthenticatedUserId, SESSION_COOKIE_NAME } from '../session'
 // one — can swing a score on its own the way this constant might suggest.
 const VOTE_HONESTY_DELTA_MAGNITUDE = 25
 
+// Shared budget across POST and DELETE /votes (scope 'vote') — cast,
+// change, and remove all draw from the same 100/hr cap, so cycling
+// create+delete can't double the effective throughput (audit #8).
 const VOTE_RATE_LIMIT = 100
 const VOTE_RATE_WINDOW_MS = 60 * 60 * 1000
 
@@ -41,15 +45,6 @@ function voteLabel(voteValue: 1 | -1): string {
 
 function voteReasonFor(voteValue: 1 | -1): string {
 	return `received a${voteValue === 1 ? 'n' : ''} ${voteLabel(voteValue)}`
-}
-
-async function isRateLimited(voterId: string): Promise<boolean> {
-	const count = await Vote.countDocuments({
-		voterId,
-		createdAt: { $gte: new Date(Date.now() - VOTE_RATE_WINDOW_MS) }
-	})
-
-	return count >= VOTE_RATE_LIMIT
 }
 
 // Same trust boundary as server/actions/opinions.ts and reviews.ts:
@@ -78,13 +73,24 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			return
 		}
 
-		if (await isRateLimited(voterId)) {
+		if (await isUserRateLimited('vote', voterId, VOTE_RATE_LIMIT, VOTE_RATE_WINDOW_MS)) {
 			response.status(429).json({
 				error: { code: 'RATE_LIMITED', message: 'Too many votes — try again later.' }
 			})
 			return
 		}
 
+		// Recorded here — past shape validation and the rate-limit check
+		// itself, same as server/lib/rate-limit.ts's auth attempts — so a
+		// script hammering with invalid/self/nonexistent targets still burns
+		// its budget rather than getting free retries.
+		await recordUserAttempt('vote', voterId)
+
+		// DEFERRED (audit #7, documented not built): between this existence
+		// check and the vote write below, the target could in principle be
+		// deleted, leaving an orphaned Vote row. Moot today — there is no
+		// delete-opinion/delete-review endpoint anywhere in this app — but
+		// worth a second look whenever one is added.
 		const target = await TARGET_MODELS[targetType].findById(targetId).select('userId')
 
 		if (!target) {
@@ -99,17 +105,7 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			return
 		}
 
-		const [voter, config, existingVote] = await Promise.all([
-			User.findById(voterId).select('honestyScore'),
-			getConfig(),
-			Vote.findOne({ voterId, targetType, targetId })
-		])
-
-		if (!voter) {
-			response.status(401).json(UNAUTHORIZED)
-			return
-		}
-
+		const existingVote = await Vote.findOne({ voterId, targetType, targetId })
 		const previousVoteValue = existingVote?.voteValue ?? null
 
 		if (previousVoteValue === voteValue) {
@@ -119,7 +115,30 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			return
 		}
 
-		const voterWeightAtVote = computeVoterWeight(voter.honestyScore, config.voteWeightFloor)
+		let voterWeightAtVote: number
+
+		if (existingVote) {
+			// A vote change reuses the ORIGINAL cast-time weight snapshot.
+			// Recomputing from the voter's CURRENT honestyScore here would let
+			// a voter's later behavior re-price a vote they already cast —
+			// exactly what VoteDocument.voterWeightAtVote's snapshot contract
+			// rules out — and would break the exact-cancellation guarantee a
+			// create -> change -> delete cycle now relies on (the delete path
+			// reverses using this same stored weight).
+			voterWeightAtVote = existingVote.voterWeightAtVote
+		} else {
+			const [voter, config] = await Promise.all([
+				User.findById(voterId).select('honestyScore'),
+				getConfig()
+			])
+
+			if (!voter) {
+				response.status(401).json(UNAUTHORIZED)
+				return
+			}
+
+			voterWeightAtVote = computeVoterWeight(voter.honestyScore, config.voteWeightFloor)
+		}
 
 		const vote = await Vote.findOneAndUpdate(
 			{ voterId, targetType, targetId },
@@ -127,14 +146,25 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			{ upsert: true, new: true, setDefaultsOnInsert: true }
 		)
 
-		const delta = previousVoteValue === null
-			? voteValue * voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
-			: (voteValue - previousVoteValue) * voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
+		// delta is this vote's full current contribution, not an incremental
+		// swing — the findOneAndUpdate below REPLACES the one HonestyLog entry
+		// tied to this vote (keyed by voteId) rather than appending a
+		// corrective entry on top of the superseded one. That's what keeps
+		// HonestyLog mirroring the live vote set 1:1: a vote that has changed
+		// three times still has exactly one log entry, reflecting only its
+		// current value, so the weighted-average recalculation never carries
+		// residue from a vote's earlier values (see server/lib/honesty-score.ts
+		// and the audit's forced-interleaving/delta-on-change findings).
+		const delta = voteValue * voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
 		const reason = previousVoteValue === null
 			? voteReasonFor(voteValue)
 			: `vote changed from ${voteLabel(previousVoteValue)} to ${voteLabel(voteValue)}`
 
-		await HonestyLog.create({ userId: target.userId, delta, reason })
+		await HonestyLog.findOneAndUpdate(
+			{ voteId: vote._id },
+			{ userId: target.userId, delta, reason, createdAt: new Date() },
+			{ upsert: true, setDefaultsOnInsert: true }
+		)
 		enqueueHonestyScoreRecalculation(target.userId.toString())
 
 		response.status(previousVoteValue === null ? 201 : 200).json(toVotePublicDTO(vote as VoteDocument))
@@ -161,6 +191,17 @@ export const removeVote = async(request: Request, response: Response, next: Next
 			return
 		}
 
+		// Same shared 'vote' budget as castVote — previously unrated, which
+		// let a create-then-delete cycle dodge the cap entirely (audit #8).
+		if (await isUserRateLimited('vote', voterId, VOTE_RATE_LIMIT, VOTE_RATE_WINDOW_MS)) {
+			response.status(429).json({
+				error: { code: 'RATE_LIMITED', message: 'Too many votes — try again later.' }
+			})
+			return
+		}
+
+		await recordUserAttempt('vote', voterId)
+
 		const deletedVote = await Vote.findOneAndDelete({ voterId, targetType, targetId })
 
 		if (!deletedVote) {
@@ -169,16 +210,19 @@ export const removeVote = async(request: Request, response: Response, next: Next
 		}
 
 		const vote = deletedVote as unknown as VoteDocument
+
+		// Removes the entry tied to this vote outright — no reversal entry
+		// needed, since there's nothing left in the log to reverse against
+		// (see the comment on HonestyLogDocument.voteId). This also closes a
+		// gap the previous reversal-entry design had: it ran only when the
+		// target still existed, so a vote on an already-deleted target left
+		// its original contribution stuck in the log forever. Removing by
+		// voteId doesn't depend on the target existing at all.
+		await HonestyLog.deleteOne({ voteId: vote._id })
+
 		const target = await TARGET_MODELS[vote.targetType].findById(vote.targetId).select('userId')
 
-		// The target itself may have been deleted since the vote was cast —
-		// nothing to attribute the reversal to in that case, so the vote
-		// removal still succeeds, it just has no honesty-log side effect.
 		if (target) {
-			const delta = -vote.voteValue * vote.voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
-			const reason = `${voteLabel(vote.voteValue)} removed`
-
-			await HonestyLog.create({ userId: target.userId, delta, reason })
 			enqueueHonestyScoreRecalculation(target.userId.toString())
 		}
 

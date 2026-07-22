@@ -51,6 +51,20 @@ export function computeVoterWeight(honestyScore: number, voteWeightFloor: number
 	return voteWeightFloor + scoreFraction * (1 - voteWeightFloor)
 }
 
+// DEFERRED (audit #12, documented not built): this walks the user's ENTIRE
+// HonestyLog history on every single recalculation. The query itself is
+// indexed (confirmed via .explain() — IXSCAN/FETCH, no collection scan), so
+// this isn't a missing-index problem, it's an algorithmic one: cost is
+// O(lifetime log entries), and since every vote/change/delete against this
+// user re-triggers a full walk, cumulative cost over their lifetime grows
+// O(N^2) in their total vote count. Acceptable at current volume; a popular
+// reviewer receiving thousands of votes would need either a bounded window
+// (very old entries beyond a few half-lives barely move the average anyway)
+// or an incrementally-maintained running average instead of a full
+// recompute each time. FIX 1's voteId linkage (each vote maps to exactly
+// one log entry) makes an incremental approach more tractable later, since
+// a single vote's effect on the aggregate becomes a well-defined, isolable
+// update rather than one of an unbounded, unlinked pile of entries.
 export async function recalculateHonestyScore(userId: string): Promise<number> {
 	const logs = await HonestyLog.find({ userId }).select('delta createdAt').lean()
 	const score = computeDecayedHonestyScore(logs.map(log => ({ delta: log.delta, createdAt: log.createdAt })))
@@ -60,11 +74,42 @@ export async function recalculateHonestyScore(userId: string): Promise<number> {
 	return score
 }
 
+// Chains recalculations per user so two overlapping calls (e.g. two votes
+// landing on the same target within milliseconds) never interleave their
+// read and write: without this, a recalculation started from stale data
+// could finish its write *after* a later, more complete recalculation,
+// silently reverting the score until some future event happens to trigger
+// another recalc (audit #2 — see the forced-interleaving regression test in
+// server/lib/tests/honesty-score-recalculation.test.ts for a concrete
+// repro). Entries are removed once their chain drains so this map doesn't
+// grow unbounded.
+//
+// This only guarantees ordering within a single Node process. A
+// horizontally scaled deployment (multiple server instances) would need a
+// database-level guard instead (e.g. an optimistic version check on the
+// User document) — not needed at this app's current single-process scale.
+const recalculationQueueByUserId = new Map<string, Promise<void>>()
+
 // Fire-and-forget entry point for vote/log writes: caller does not await
 // this, so a slow or failing recalculation never blocks the request that
 // triggered it.
 export function enqueueHonestyScoreRecalculation(userId: string): void {
-	recalculateHonestyScore(userId).catch(error => {
-		console.error('Honesty score recalculation failed:', error.message)
-	})
+	const previous = recalculationQueueByUserId.get(userId) ?? Promise.resolve()
+
+	const next = previous
+		.catch(() => {
+			// A prior failure must not break the chain for calls queued after it.
+		})
+		.then(() => recalculateHonestyScore(userId))
+		.then(() => {})
+		.catch(error => {
+			console.error('Honesty score recalculation failed:', error.message)
+		})
+		.finally(() => {
+			if (recalculationQueueByUserId.get(userId) === next) {
+				recalculationQueueByUserId.delete(userId)
+			}
+		})
+
+	recalculationQueueByUserId.set(userId, next)
 }

@@ -100,6 +100,10 @@ export const createReview = async(request: Request, response: Response, next: Ne
 	}
 }
 
+// DEFERRED (audit #9, documented not built — no caching layer exists yet):
+// same personalization note as server/actions/opinions.ts's getMovieOpinions
+// — this response's viewerVote is cookie-personalized, so any future
+// shared cache in front of Express must be cookie-aware.
 export const getMovieReviews = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const movieId = Number(request.params.movieId)

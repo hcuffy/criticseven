@@ -74,6 +74,13 @@ export const createOpinion = async(request: Request, response: Response, next: N
 	}
 }
 
+// DEFERRED (audit #9, documented not built — no caching layer exists yet):
+// this response includes viewerVote, personalized per requesting session
+// via the Cookie header. No cross-user leak today (see getVoteSummaries),
+// but if a shared cache (CDN, reverse proxy) is ever placed in front of
+// Express without being cookie-aware, one viewer's personalized response
+// could be served to another. Anyone adding caching here must key on the
+// session, not just the URL.
 export const getMovieOpinions = async(request: Request, response: Response, next: NextFunction) => {
 	try {
 		const movieId = Number(request.params.movieId)

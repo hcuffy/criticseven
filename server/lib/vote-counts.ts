@@ -10,6 +10,14 @@ export interface VoteSummary {
 	viewerVote: 1 | -1 | null
 }
 
+// DEFERRED (audit #11, documented not built — no real traffic yet):
+// netVoteCount is computed live via aggregation on every page load, not
+// denormalized. Fine at current scale; before real traffic this needs a
+// counter cache instead — e.g. $inc a netVoteCount field on the
+// TrailerOpinion/Review document itself at vote create/change/delete time
+// (server/actions/votes.ts), so listing pages stop touching the Votes
+// collection at all.
+//
 // Keyed by targetId string so callers can look up a summary per item
 // without caring about ObjectId identity comparisons.
 export async function getVoteSummaries(

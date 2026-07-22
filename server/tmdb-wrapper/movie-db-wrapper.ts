@@ -49,7 +49,7 @@ export default class TmdbMovie {
 
   async getMovieDetails(movieId: string) {
     const { data } = await axios.get(
-      `${apiBaseURL}/movie/${movieId}?api_key=${this.apiKey}&language=${this.language}`
+      `${apiBaseURL}/movie/${encodeURIComponent(movieId)}?api_key=${this.apiKey}&language=${this.language}`
     )
 
     return data
@@ -57,7 +57,7 @@ export default class TmdbMovie {
 
   async getMovieImages(movieId: string) {
     const { data } = await axios.get(
-      `${apiBaseURL}/movie/${movieId}/images?api_key=${this.apiKey}&language=${this.language}`
+      `${apiBaseURL}/movie/${encodeURIComponent(movieId)}/images?api_key=${this.apiKey}&language=${this.language}`
     )
 
     return data
@@ -65,7 +65,7 @@ export default class TmdbMovie {
 
   async getMovieCredits(movieId: string) {
     const { data } = await axios.get(
-      `${apiBaseURL}/movie/${movieId}/credits?api_key=${this.apiKey}&language=${this.language}`
+      `${apiBaseURL}/movie/${encodeURIComponent(movieId)}/credits?api_key=${this.apiKey}&language=${this.language}`
     )
 
     return data
@@ -73,7 +73,7 @@ export default class TmdbMovie {
 
   async getMovieVideos(movieId: string) {
     const { data } = await axios.get(
-      `${apiBaseURL}/movie/${movieId}/videos?api_key=${this.apiKey}&language=${this.language}`
+      `${apiBaseURL}/movie/${encodeURIComponent(movieId)}/videos?api_key=${this.apiKey}&language=${this.language}`
     )
 
     return data

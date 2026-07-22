@@ -1,6 +1,8 @@
 import { Badge, Container, Grid, Group, Text, Title } from '@mantine/core'
 import React from 'react'
-import type { MovieDetails, MovieVideos } from './types'
+import OpinionSection from './opinion-section'
+import ReviewSection from './review-section'
+import type { MovieDetails, MovieVideos, OpinionSummary, PaginatedList, ReviewSummary } from './types'
 
 function findTrailer(videos: MovieVideos) {
   return (
@@ -10,7 +12,15 @@ function findTrailer(videos: MovieVideos) {
   )
 }
 
-export default function MovieDetail({ movie, videos }: { movie: MovieDetails; videos: MovieVideos }) {
+export default function MovieDetail({
+  movie, videos, opinions, reviews, isAuthenticated
+}: {
+  movie: MovieDetails
+  videos: MovieVideos
+  opinions: PaginatedList<OpinionSummary>
+  reviews: PaginatedList<ReviewSummary>
+  isAuthenticated: boolean
+}) {
   const trailer = findTrailer(videos)
   const releaseYear = movie.release_date ? movie.release_date.slice(0, 4) : null
 
@@ -64,6 +74,9 @@ export default function MovieDetail({ movie, videos }: { movie: MovieDetails; vi
           ) : null}
         </Grid.Col>
       </Grid>
+
+      <OpinionSection opinions={opinions} isAuthenticated={isAuthenticated} />
+      <ReviewSection reviews={reviews} isAuthenticated={isAuthenticated} />
     </Container>
   )
 }

@@ -37,11 +37,17 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs): Promise<MovieDetailLoaderData> {
+	// Forwarded the same way the mutation actions below already do — without
+	// it, Express never sees the viewer's session on these GET requests, so
+	// viewerVote comes back null even for a logged-in viewer who has voted
+	// (the vote buttons would never render as active).
+	const cookie = request.headers.get('Cookie') ?? ''
+
 	const [movieResponse, videosResponse, opinionsResponse, reviewsResponse, session] = await Promise.all([
 		fetch(`${API_URL}/movies/details?movieId=${params.movieId}`),
 		fetch(`${API_URL}/movies/videos?movieId=${params.movieId}`),
-		fetch(`${API_URL}/movies/${params.movieId}/opinions`),
-		fetch(`${API_URL}/movies/${params.movieId}/reviews`),
+		fetch(`${API_URL}/movies/${params.movieId}/opinions`, { headers: { Cookie: cookie } }),
+		fetch(`${API_URL}/movies/${params.movieId}/reviews`, { headers: { Cookie: cookie } }),
 		getSession(request)
 	])
 

@@ -352,7 +352,18 @@ describe('honesty score recalculation', () => {
 		await request(app).post('/votes').set('Cookie', cookie).send({ targetType: 'opinion', targetId: opinion.id, voteValue: -1 })
 		const score = await waitForHonestyScore(author.id, current => current < 50)
 
-		expect(score).toBeLessThan(50)
+		// Exact, not just "less than 50": FIX 1 replaces (not appends to) the
+		// single HonestyLog entry tied to this vote, so there's exactly one
+		// entry after the change (delta = -1 * 1.0 * 25) and its weighted
+		// "average" is just that one value, with no timing-dependent wobble.
+		// The weak toBeLessThan(50) this replaced would have passed just as
+		// happily on the pre-fix, provably wrong value of 37.5 (see the audit).
+		expect(score).toBe(25)
+
+		const logs = await HonestyLog.find({ userId: author.id })
+
+		expect(logs).toHaveLength(1)
+		expect(logs[0].delta).toBe(-25)
 	})
 
 	test('triggers on vote delete — reverses the honesty-log contribution', async() => {

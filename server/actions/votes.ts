@@ -127,14 +127,25 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			{ upsert: true, new: true, setDefaultsOnInsert: true }
 		)
 
-		const delta = previousVoteValue === null
-			? voteValue * voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
-			: (voteValue - previousVoteValue) * voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
+		// delta is this vote's full current contribution, not an incremental
+		// swing — the findOneAndUpdate below REPLACES the one HonestyLog entry
+		// tied to this vote (keyed by voteId) rather than appending a
+		// corrective entry on top of the superseded one. That's what keeps
+		// HonestyLog mirroring the live vote set 1:1: a vote that has changed
+		// three times still has exactly one log entry, reflecting only its
+		// current value, so the weighted-average recalculation never carries
+		// residue from a vote's earlier values (see server/lib/honesty-score.ts
+		// and the audit's forced-interleaving/delta-on-change findings).
+		const delta = voteValue * voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
 		const reason = previousVoteValue === null
 			? voteReasonFor(voteValue)
 			: `vote changed from ${voteLabel(previousVoteValue)} to ${voteLabel(voteValue)}`
 
-		await HonestyLog.create({ userId: target.userId, delta, reason })
+		await HonestyLog.findOneAndUpdate(
+			{ voteId: vote._id },
+			{ userId: target.userId, delta, reason, createdAt: new Date() },
+			{ upsert: true, setDefaultsOnInsert: true }
+		)
 		enqueueHonestyScoreRecalculation(target.userId.toString())
 
 		response.status(previousVoteValue === null ? 201 : 200).json(toVotePublicDTO(vote as VoteDocument))
@@ -169,16 +180,19 @@ export const removeVote = async(request: Request, response: Response, next: Next
 		}
 
 		const vote = deletedVote as unknown as VoteDocument
+
+		// Removes the entry tied to this vote outright — no reversal entry
+		// needed, since there's nothing left in the log to reverse against
+		// (see the comment on HonestyLogDocument.voteId). This also closes a
+		// gap the previous reversal-entry design had: it ran only when the
+		// target still existed, so a vote on an already-deleted target left
+		// its original contribution stuck in the log forever. Removing by
+		// voteId doesn't depend on the target existing at all.
+		await HonestyLog.deleteOne({ voteId: vote._id })
+
 		const target = await TARGET_MODELS[vote.targetType].findById(vote.targetId).select('userId')
 
-		// The target itself may have been deleted since the vote was cast —
-		// nothing to attribute the reversal to in that case, so the vote
-		// removal still succeeds, it just has no honesty-log side effect.
 		if (target) {
-			const delta = -vote.voteValue * vote.voterWeightAtVote * VOTE_HONESTY_DELTA_MAGNITUDE
-			const reason = `${voteLabel(vote.voteValue)} removed`
-
-			await HonestyLog.create({ userId: target.userId, delta, reason })
 			enqueueHonestyScoreRecalculation(target.userId.toString())
 		}
 

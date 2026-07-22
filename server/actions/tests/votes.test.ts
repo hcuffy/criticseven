@@ -291,18 +291,16 @@ describe('honesty score recalculation', () => {
 
 		expect(deleteResponse.status).toBe(204)
 
-		// The create (+25) and reversal (-25) entries land milliseconds apart,
-		// so their time-decay weights aren't bit-for-bit identical — the score
-		// settles very close to, but not always exactly, the 50 baseline.
-		const score = await waitForHonestyScore(author.id, current => Math.abs(current - 50) < 0.01)
+		// The HonestyLog entry tied to this vote is removed outright (not
+		// offset by a reversal entry) — with no entries left for this author,
+		// the score is exactly the baseline, not just close to it.
+		const score = await waitForHonestyScore(author.id, current => current === 50)
 
-		expect(score).toBeCloseTo(50, 1)
+		expect(score).toBe(50)
 
-		const logs = await HonestyLog.find({ userId: author.id }).sort({ createdAt: 1 })
+		const logs = await HonestyLog.find({ userId: author.id })
 
-		expect(logs).toHaveLength(2)
-		expect(logs[1].reason).toBe('upvote removed')
-		expect(logs[1].delta).toBeCloseTo(-25)
+		expect(logs).toHaveLength(0)
 	})
 })
 

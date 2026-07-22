@@ -19,9 +19,13 @@ const opinion = {
 
 describe('trailer opinion serializer allowlist', () => {
 	test('public DTO exposes author as UserPublicDTO, never raw userId or email', () => {
-		const dto = toTrailerOpinionPublicDTO(opinion as never)
+		const dto = toTrailerOpinionPublicDTO(opinion as never, { netVoteCount: 3, viewerVote: -1 })
 
-		expect(Object.keys(dto).sort()).toEqual(['author', 'comment', 'createdAt', 'hypeLevel', 'id', 'movieId'].sort())
+		expect(Object.keys(dto).sort()).toEqual(
+			['author', 'comment', 'createdAt', 'hypeLevel', 'id', 'movieId', 'netVoteCount', 'viewerVote'].sort()
+		)
+		expect(dto.netVoteCount).toBe(3)
+		expect(dto.viewerVote).toBe(-1)
 		expect(dto).not.toHaveProperty('userId')
 		expect(dto.author).toEqual({
 			username: 'critic7',
@@ -34,6 +38,8 @@ describe('trailer opinion serializer allowlist', () => {
 	test('author.isLowTrust reflects the low-trust threshold', () => {
 		const lowTrustOpinion = { ...opinion, userId: { ...user, honestyScore: 10 } }
 
-		expect(toTrailerOpinionPublicDTO(lowTrustOpinion as never).author.isLowTrust).toBe(true)
+		expect(
+			toTrailerOpinionPublicDTO(lowTrustOpinion as never, { netVoteCount: 0, viewerVote: null }).author.isLowTrust
+		).toBe(true)
 	})
 })

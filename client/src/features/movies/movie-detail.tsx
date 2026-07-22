@@ -13,13 +13,14 @@ function findTrailer(videos: MovieVideos) {
 }
 
 export default function MovieDetail({
-  movie, videos, opinions, reviews, isAuthenticated
+  movie, videos, opinions, reviews, isAuthenticated, currentUsername
 }: {
   movie: MovieDetails
   videos: MovieVideos
   opinions: PaginatedList<OpinionSummary>
   reviews: PaginatedList<ReviewSummary>
   isAuthenticated: boolean
+  currentUsername: string | null
 }) {
   const trailer = findTrailer(videos)
   const releaseYear = movie.release_date ? movie.release_date.slice(0, 4) : null
@@ -75,8 +76,8 @@ export default function MovieDetail({
         </Grid.Col>
       </Grid>
 
-      <OpinionSection opinions={opinions} isAuthenticated={isAuthenticated} />
-      <ReviewSection reviews={reviews} isAuthenticated={isAuthenticated} />
+      <OpinionSection opinions={opinions} isAuthenticated={isAuthenticated} currentUsername={currentUsername} />
+      <ReviewSection reviews={reviews} isAuthenticated={isAuthenticated} currentUsername={currentUsername} />
     </Container>
   )
 }

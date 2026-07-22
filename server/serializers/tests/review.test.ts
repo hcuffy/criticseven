@@ -25,14 +25,16 @@ const review = {
 
 describe('review serializer allowlist', () => {
 	test('public DTO exposes author as UserPublicDTO, never raw userId or email', () => {
-		const dto = toReviewPublicDTO(review as never)
+		const dto = toReviewPublicDTO(review as never, { netVoteCount: 3, viewerVote: 1 })
 
 		expect(Object.keys(dto).sort()).toEqual(
 			[
 				'acting', 'author', 'cinematography', 'comment', 'createdAt', 'directing', 'editing', 'id', 'movieId',
-				'plot', 'score', 'writing'
+				'netVoteCount', 'plot', 'score', 'viewerVote', 'writing'
 			].sort()
 		)
+		expect(dto.netVoteCount).toBe(3)
+		expect(dto.viewerVote).toBe(1)
 		expect(dto).not.toHaveProperty('userId')
 		expect(dto.author).toEqual({
 			username: 'critic7',
@@ -45,6 +47,6 @@ describe('review serializer allowlist', () => {
 	test('author.isLowTrust reflects the low-trust threshold', () => {
 		const lowTrustReview = { ...review, userId: { ...user, honestyScore: 10 } }
 
-		expect(toReviewPublicDTO(lowTrustReview as never).author.isLowTrust).toBe(true)
+		expect(toReviewPublicDTO(lowTrustReview as never, { netVoteCount: 0, viewerVote: null }).author.isLowTrust).toBe(true)
 	})
 })

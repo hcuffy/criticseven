@@ -98,7 +98,7 @@ describe('POST /opinions', () => {
 			.send({ movieId: 550, hypeLevel: 4, comment: 'Hyped.' })
 
 		expect(response.status).toBe(201)
-		expect(Object.keys(response.body).sort()).toEqual(['author', 'comment', 'createdAt', 'hypeLevel', 'id', 'movieId'].sort())
+		expect(Object.keys(response.body).sort()).toEqual(['author', 'comment', 'createdAt', 'hypeLevel', 'id', 'movieId', 'netVoteCount', 'viewerVote'].sort())
 		expect(response.body).not.toHaveProperty('userId')
 		expect(response.body.author).toEqual({
 			username: 'critic7', honestyScore: 50, isLowTrust: false, isPhoneVerified: false
@@ -136,7 +136,7 @@ describe('GET /movies/:movieId/opinions', () => {
 		expect(response.body.results).toHaveLength(2)
 
 		for (const opinion of response.body.results) {
-			expect(Object.keys(opinion).sort()).toEqual(['author', 'comment', 'createdAt', 'hypeLevel', 'id', 'movieId'].sort())
+			expect(Object.keys(opinion).sort()).toEqual(['author', 'comment', 'createdAt', 'hypeLevel', 'id', 'movieId', 'netVoteCount', 'viewerVote'].sort())
 			expect(JSON.stringify(opinion)).not.toContain('@example.com')
 		}
 	})

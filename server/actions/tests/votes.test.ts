@@ -289,6 +289,39 @@ describe('voterWeightAtVote snapshot', () => {
 		expect(logs[1].delta).toBeCloseTo(25) // 1 * 1.0 * 25
 		expect(Math.abs(logs[1].delta)).toBeGreaterThan(Math.abs(logs[0].delta))
 	})
+
+	test('a vote change reuses the original cast-time weight, not the voter\'s current score (CodeRabbit)', async() => {
+		const author = await seedUser({ username: 'author', email: 'author@example.com' })
+		const voter = await seedUser({ username: 'voter', email: 'voter@example.com', honestyScore: 100 })
+		const opinion = await seedOpinion(author.id)
+		const cookie = sessionCookieFor(voter)
+
+		await request(app).post('/votes').set('Cookie', cookie).send({ targetType: 'opinion', targetId: opinion.id, voteValue: 1 })
+
+		// The voter's score drops to the floor after casting — a change must
+		// not re-price the already-cast vote against this new value.
+		await User.findByIdAndUpdate(voter.id, { honestyScore: 0 })
+
+		await request(app).post('/votes').set('Cookie', cookie).send({ targetType: 'opinion', targetId: opinion.id, voteValue: -1 })
+
+		const voteRow = await Vote.findOne({ voterId: voter.id, targetType: 'opinion', targetId: opinion.id })
+
+		expect(voteRow?.voterWeightAtVote).toBe(1) // unchanged from the original cast, not recomputed to ~0.2
+
+		const deleteResponse = await request(app)
+			.delete('/votes')
+			.set('Cookie', cookie)
+			.send({ targetType: 'opinion', targetId: opinion.id })
+
+		expect(deleteResponse.status).toBe(204)
+
+		// Create -> change -> remove, with a shared weight throughout, nets to
+		// exactly the baseline — not just close to it (see audit #1's fix).
+		const score = await waitForHonestyScore(author.id, current => current === 50)
+
+		expect(score).toBe(50)
+		expect(await HonestyLog.countDocuments({ userId: author.id })).toBe(0)
+	})
 })
 
 describe('honesty score recalculation', () => {

@@ -100,17 +100,7 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			return
 		}
 
-		const [voter, config, existingVote] = await Promise.all([
-			User.findById(voterId).select('honestyScore'),
-			getConfig(),
-			Vote.findOne({ voterId, targetType, targetId })
-		])
-
-		if (!voter) {
-			response.status(401).json(UNAUTHORIZED)
-			return
-		}
-
+		const existingVote = await Vote.findOne({ voterId, targetType, targetId })
 		const previousVoteValue = existingVote?.voteValue ?? null
 
 		if (previousVoteValue === voteValue) {
@@ -120,7 +110,30 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			return
 		}
 
-		const voterWeightAtVote = computeVoterWeight(voter.honestyScore, config.voteWeightFloor)
+		let voterWeightAtVote: number
+
+		if (existingVote) {
+			// A vote change reuses the ORIGINAL cast-time weight snapshot.
+			// Recomputing from the voter's CURRENT honestyScore here would let
+			// a voter's later behavior re-price a vote they already cast —
+			// exactly what VoteDocument.voterWeightAtVote's snapshot contract
+			// rules out — and would break the exact-cancellation guarantee a
+			// create -> change -> delete cycle now relies on (the delete path
+			// reverses using this same stored weight).
+			voterWeightAtVote = existingVote.voterWeightAtVote
+		} else {
+			const [voter, config] = await Promise.all([
+				User.findById(voterId).select('honestyScore'),
+				getConfig()
+			])
+
+			if (!voter) {
+				response.status(401).json(UNAUTHORIZED)
+				return
+			}
+
+			voterWeightAtVote = computeVoterWeight(voter.honestyScore, config.voteWeightFloor)
+		}
 
 		const vote = await Vote.findOneAndUpdate(
 			{ voterId, targetType, targetId },

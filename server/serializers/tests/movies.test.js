@@ -1,5 +1,5 @@
 import {
-	toMovieCreditsDTO, toMovieDetailsDTO, toMovieImagesDTO, toMovieListDTO, toMovieSummaryDTO
+	toMovieCreditsDTO, toMovieDetailsDTO, toMovieImagesDTO, toMovieListDTO, toMovieSummaryDTO, toMovieVideosDTO
 } from '../movies'
 
 const tmdbMovie = {
@@ -75,5 +75,19 @@ describe('movie serializers allowlist', () => {
 
 		expect(Object.keys(dto.backdrops[0]).sort()).toEqual(['aspect_ratio', 'file_path', 'height', 'width'])
 		expect(dto.posters).toEqual([])
+	})
+
+	test('videos DTO allowlists video entries and tolerates a missing array', () => {
+		const dto = toMovieVideosDTO({
+			id: 550,
+			results: [{
+				id: '5c9294240e0a267cd516835f', key: 'SUXWAEX2jlg', site: 'YouTube', type: 'Trailer', name: 'Official Trailer', official: true, iso_639_1: 'en', iso_3166_1: 'US', size: 1080, published_at: '2016-08-03T00:00:00.000Z'
+			}]
+		})
+
+		expect(Object.keys(dto.results[0]).sort()).toEqual(['id', 'key', 'name', 'official', 'site', 'type'])
+		expect(dto.results[0].key).toBe('SUXWAEX2jlg')
+
+		expect(toMovieVideosDTO({ id: 550 }).results).toEqual([])
 	})
 })

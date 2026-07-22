@@ -1,7 +1,7 @@
 import axios from 'axios'
 import TmdbMovie from '../movie-db-wrapper'
 import {
-	API_KEY, fakeCredits, fakeImageInfo, fakeMovie, fakeMovieList
+	API_KEY, fakeCredits, fakeImageInfo, fakeMovie, fakeMovieList, fakeVideos
 } from './mock-data'
 
 jest.mock('axios')
@@ -95,6 +95,19 @@ describe('Should test the retrieval of required movie information', () => {
 		const movieCredit = await Tmdb.getMovieCredits()
 
 		expect(movieCredit).toEqual(fakeCredits)
+	})
+
+	test('should fetch movie videos', async() => {
+		const response = {
+			data: fakeVideos
+		}
+
+		axios.get.mockResolvedValue(response)
+		const Tmdb = new TmdbMovie(API_KEY)
+
+		const movieVideos = await Tmdb.getMovieVideos()
+
+		expect(movieVideos).toEqual(fakeVideos)
 	})
 })
 

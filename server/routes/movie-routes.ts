@@ -1,6 +1,6 @@
 import express from 'express'
 import {
-	getCredits, getDetails, getImages, getLatest, getNowPlaying, getPopular, getUpcoming
+	getCredits, getDetails, getImages, getLatest, getNowPlaying, getPopular, getUpcoming, getVideos
 } from '../actions'
 
 const movieRoutes = () => {
@@ -8,6 +8,7 @@ const movieRoutes = () => {
 
 	router.get('/credits', getCredits)
 	router.get('/images', getImages)
+	router.get('/videos', getVideos)
 	router.get('/details', getDetails)
 	router.get('/upcoming', getUpcoming)
 	router.get('/playing', getNowPlaying)

@@ -100,6 +100,24 @@ export const fakeImageInfo = {
 	]
 }
 
+export const fakeVideos = {
+	"id": 550,
+	"results": [
+		{
+			"iso_639_1": "en",
+			"iso_3166_1": "US",
+			"name": "Official Trailer",
+			"key": "SUXWAEX2jlg",
+			"site": "YouTube",
+			"size": 1080,
+			"type": "Trailer",
+			"official": true,
+			"published_at": "2016-08-03T00:00:00.000Z",
+			"id": "5c9294240e0a267cd516835f"
+		}
+	]
+}
+
 export const fakeCredits ={
 	"id": 222,
 	"cast": [

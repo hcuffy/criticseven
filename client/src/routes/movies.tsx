@@ -5,16 +5,33 @@ import type { Route } from './+types/movies'
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000'
 
-export async function loader(): Promise<MovieList> {
-  const response = await fetch(`${API_URL}/movies/popular`)
+interface MoviesLoaderData {
+  popular: MovieList
+  upcoming: MovieList
+}
 
-  if (!response.ok) {
+export function meta() {
+  return [
+    { title: 'Movies — criticseven' },
+    { name: 'description', content: 'Popular and upcoming movies.' }
+  ]
+}
+
+export async function loader(): Promise<MoviesLoaderData> {
+  const [popularResponse, upcomingResponse] = await Promise.all([
+    fetch(`${API_URL}/movies/popular`),
+    fetch(`${API_URL}/movies/upcoming`)
+  ])
+
+  if (!popularResponse.ok || !upcomingResponse.ok) {
     throw new Response('Failed to load movies', { status: 502 })
   }
 
-  return response.json()
+  const [popular, upcoming] = await Promise.all([popularResponse.json(), upcomingResponse.json()])
+
+  return { popular, upcoming }
 }
 
 export default function MoviesRoute({ loaderData }: Route.ComponentProps) {
-  return <Movies moviesData={loaderData} />
+  return <Movies popular={loaderData.popular} upcoming={loaderData.upcoming} />
 }

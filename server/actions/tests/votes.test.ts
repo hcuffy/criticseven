@@ -1,8 +1,8 @@
 import cookieParser from 'cookie-parser'
 import express from 'express'
-import mongoose from 'mongoose'
 import request from 'supertest'
 import { HonestyLog } from '../../database/models/honesty-log'
+import { RateLimitEvent } from '../../database/models/RateLimitEvent'
 import { TrailerOpinion } from '../../database/models/trailer-opinion'
 import { User, UserDocument } from '../../database/models/User'
 import { Vote } from '../../database/models/vote'
@@ -185,17 +185,14 @@ describe('POST /votes', () => {
 		expect(votesForTarget).toHaveLength(1)
 	})
 
-	test('rate limits after 100 votes in the last hour', async() => {
+	test('rate limits after 100 vote attempts in the last hour', async() => {
 		const voter = await seedUser()
 
-		await Vote.insertMany(
-			Array.from({ length: 100 }, () => ({
-				voterId: voter.id,
-				targetType: 'opinion',
-				targetId: new mongoose.Types.ObjectId(),
-				voteValue: 1,
-				voterWeightAtVote: 1
-			}))
+		// Seeded as recorded attempts (audit #8 fix), not live Vote rows —
+		// the limit is on attempts, independent of whether any of them still
+		// have a surviving Vote document.
+		await RateLimitEvent.insertMany(
+			Array.from({ length: 100 }, () => ({ scope: 'vote', userId: voter.id }))
 		)
 
 		const response = await request(app)
@@ -204,6 +201,56 @@ describe('POST /votes', () => {
 			.send({ targetType: 'opinion', targetId: '507f1f77bcf86cd799439011', voteValue: 1 })
 
 		expect(response.status).toBe(429)
+	})
+
+	test('rate limits DELETE /votes too, sharing the same budget as POST (audit #8)', async() => {
+		const voter = await seedUser()
+
+		await RateLimitEvent.insertMany(
+			Array.from({ length: 100 }, () => ({ scope: 'vote', userId: voter.id }))
+		)
+
+		const response = await request(app)
+			.delete('/votes')
+			.set('Cookie', sessionCookieFor(voter))
+			.send({ targetType: 'opinion', targetId: '507f1f77bcf86cd799439011' })
+
+		expect(response.status).toBe(429)
+	})
+
+	test('vote-then-unvote cycling cannot evade the rate limit (audit #8)', async() => {
+		const author = await seedUser({ username: 'author', email: 'author@example.com' })
+		const voter = await seedUser({ username: 'voter', email: 'voter@example.com' })
+		const opinion = await seedOpinion(author.id)
+		const cookie = sessionCookieFor(voter)
+
+		let sawRateLimited = false
+
+		// 60 cycles is 120 attempts, over the shared 100/hr cap, even though
+		// at most one Vote document ever exists at a time — the previous
+		// live-Vote-row count would have let every single cycle through.
+		for (let cycle = 0; cycle < 60 && !sawRateLimited; cycle++) {
+			const voteResponse = await request(app)
+				.post('/votes')
+				.set('Cookie', cookie)
+				.send({ targetType: 'opinion', targetId: opinion.id, voteValue: 1 })
+
+			if (voteResponse.status === 429) {
+				sawRateLimited = true
+				break
+			}
+
+			const deleteResponse = await request(app)
+				.delete('/votes')
+				.set('Cookie', cookie)
+				.send({ targetType: 'opinion', targetId: opinion.id })
+
+			if (deleteResponse.status === 429) {
+				sawRateLimited = true
+			}
+		}
+
+		expect(sawRateLimited).toBe(true)
 	})
 })
 

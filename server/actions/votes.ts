@@ -7,6 +7,7 @@ import { User } from '../database/models/User'
 import { Vote, VoteDocument, VoteTargetType } from '../database/models/vote'
 import { getConfig } from '../lib/config'
 import { computeVoterWeight, enqueueHonestyScoreRecalculation } from '../lib/honesty-score'
+import { isUserRateLimited, recordUserAttempt } from '../lib/rate-limit'
 import { toVotePublicDTO } from '../serializers'
 import { getAuthenticatedUserId, SESSION_COOKIE_NAME } from '../session'
 
@@ -19,6 +20,9 @@ import { getAuthenticatedUserId, SESSION_COOKIE_NAME } from '../session'
 // one — can swing a score on its own the way this constant might suggest.
 const VOTE_HONESTY_DELTA_MAGNITUDE = 25
 
+// Shared budget across POST and DELETE /votes (scope 'vote') — cast,
+// change, and remove all draw from the same 100/hr cap, so cycling
+// create+delete can't double the effective throughput (audit #8).
 const VOTE_RATE_LIMIT = 100
 const VOTE_RATE_WINDOW_MS = 60 * 60 * 1000
 
@@ -41,15 +45,6 @@ function voteLabel(voteValue: 1 | -1): string {
 
 function voteReasonFor(voteValue: 1 | -1): string {
 	return `received a${voteValue === 1 ? 'n' : ''} ${voteLabel(voteValue)}`
-}
-
-async function isRateLimited(voterId: string): Promise<boolean> {
-	const count = await Vote.countDocuments({
-		voterId,
-		createdAt: { $gte: new Date(Date.now() - VOTE_RATE_WINDOW_MS) }
-	})
-
-	return count >= VOTE_RATE_LIMIT
 }
 
 // Same trust boundary as server/actions/opinions.ts and reviews.ts:
@@ -78,12 +73,18 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 			return
 		}
 
-		if (await isRateLimited(voterId)) {
+		if (await isUserRateLimited('vote', voterId, VOTE_RATE_LIMIT, VOTE_RATE_WINDOW_MS)) {
 			response.status(429).json({
 				error: { code: 'RATE_LIMITED', message: 'Too many votes — try again later.' }
 			})
 			return
 		}
+
+		// Recorded here — past shape validation and the rate-limit check
+		// itself, same as server/lib/rate-limit.ts's auth attempts — so a
+		// script hammering with invalid/self/nonexistent targets still burns
+		// its budget rather than getting free retries.
+		await recordUserAttempt('vote', voterId)
 
 		const target = await TARGET_MODELS[targetType].findById(targetId).select('userId')
 
@@ -171,6 +172,17 @@ export const removeVote = async(request: Request, response: Response, next: Next
 			})
 			return
 		}
+
+		// Same shared 'vote' budget as castVote — previously unrated, which
+		// let a create-then-delete cycle dodge the cap entirely (audit #8).
+		if (await isUserRateLimited('vote', voterId, VOTE_RATE_LIMIT, VOTE_RATE_WINDOW_MS)) {
+			response.status(429).json({
+				error: { code: 'RATE_LIMITED', message: 'Too many votes — try again later.' }
+			})
+			return
+		}
+
+		await recordUserAttempt('vote', voterId)
 
 		const deletedVote = await Vote.findOneAndDelete({ voterId, targetType, targetId })
 

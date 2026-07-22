@@ -420,6 +420,30 @@ describe('DELETE /votes', () => {
 		expect(response.status).toBe(204)
 		expect(await Vote.countDocuments({ targetType: 'opinion', targetId: opinion.id })).toBe(0)
 	})
+
+	test('ignores a body-supplied voterId — cannot remove someone else\'s vote by curling directly (audit #5)', async() => {
+		const author = await seedUser({ username: 'author', email: 'author@example.com' })
+		const realVoter = await seedUser({ username: 'real-voter', email: 'real-voter@example.com' })
+		const impersonationTarget = await seedUser({ username: 'someone-else', email: 'else@example.com' })
+		const opinion = await seedOpinion(author.id)
+
+		await request(app).post('/votes').set('Cookie', sessionCookieFor(realVoter)).send({
+			targetType: 'opinion', targetId: opinion.id, voteValue: 1
+		})
+
+		// The attacker has their OWN session (realVoter's), but forges a
+		// different voterId in the body hoping to delete someone else's vote
+		// — or, as here, one that doesn't even exist for that forged id.
+		const response = await request(app)
+			.delete('/votes')
+			.set('Cookie', sessionCookieFor(realVoter))
+			.send({ voterId: impersonationTarget.id, targetType: 'opinion', targetId: opinion.id })
+
+		// Succeeds — but removes realVoter's own vote (the cookie's real
+		// owner), not anything belonging to the forged voterId.
+		expect(response.status).toBe(204)
+		expect(await Vote.countDocuments({ voterId: realVoter.id, targetType: 'opinion', targetId: opinion.id })).toBe(0)
+	})
 })
 
 describe('net vote count on opinion listings', () => {

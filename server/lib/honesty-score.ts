@@ -60,11 +60,42 @@ export async function recalculateHonestyScore(userId: string): Promise<number> {
 	return score
 }
 
+// Chains recalculations per user so two overlapping calls (e.g. two votes
+// landing on the same target within milliseconds) never interleave their
+// read and write: without this, a recalculation started from stale data
+// could finish its write *after* a later, more complete recalculation,
+// silently reverting the score until some future event happens to trigger
+// another recalc (audit #2 — see the forced-interleaving regression test in
+// server/lib/tests/honesty-score-recalculation.test.ts for a concrete
+// repro). Entries are removed once their chain drains so this map doesn't
+// grow unbounded.
+//
+// This only guarantees ordering within a single Node process. A
+// horizontally scaled deployment (multiple server instances) would need a
+// database-level guard instead (e.g. an optimistic version check on the
+// User document) — not needed at this app's current single-process scale.
+const recalculationQueueByUserId = new Map<string, Promise<void>>()
+
 // Fire-and-forget entry point for vote/log writes: caller does not await
 // this, so a slow or failing recalculation never blocks the request that
 // triggered it.
 export function enqueueHonestyScoreRecalculation(userId: string): void {
-	recalculateHonestyScore(userId).catch(error => {
-		console.error('Honesty score recalculation failed:', error.message)
-	})
+	const previous = recalculationQueueByUserId.get(userId) ?? Promise.resolve()
+
+	const next = previous
+		.catch(() => {
+			// A prior failure must not break the chain for calls queued after it.
+		})
+		.then(() => recalculateHonestyScore(userId))
+		.then(() => {})
+		.catch(error => {
+			console.error('Honesty score recalculation failed:', error.message)
+		})
+		.finally(() => {
+			if (recalculationQueueByUserId.get(userId) === next) {
+				recalculationQueueByUserId.delete(userId)
+			}
+		})
+
+	recalculationQueueByUserId.set(userId, next)
 }

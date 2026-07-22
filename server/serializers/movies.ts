@@ -190,9 +190,6 @@ function toMovieVideoDTO(video: TmdbPayload): MovieVideoDTO {
 	}
 }
 
-// Movie.trailerUrl (the app's own field, docs/plan Phase 5 item 1) is the
-// primary trailer source once something populates it; this stays as the
-// fallback for movies that don't have one yet.
 export function toMovieVideosDTO(payload: TmdbPayload): MovieVideosDTO {
 	return {
 		id: payload.id as number,

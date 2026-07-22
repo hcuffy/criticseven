@@ -44,3 +44,41 @@ export interface MovieVideos {
   id: number
   results: MovieVideo[]
 }
+
+export interface AuthorSummary {
+  username: string
+  honestyScore: number
+  isLowTrust: boolean
+  isPhoneVerified: boolean
+}
+
+export interface OpinionSummary {
+  id: string
+  movieId: number
+  author: AuthorSummary
+  hypeLevel: number
+  comment: string
+  createdAt: string
+}
+
+export interface ReviewSummary {
+  id: string
+  movieId: number
+  author: AuthorSummary
+  plot: number
+  acting: number
+  writing: number
+  score: number
+  directing: number
+  editing: number
+  cinematography: number
+  comment: string
+  createdAt: string
+}
+
+export interface PaginatedList<T> {
+  page: number
+  totalPages: number
+  totalResults: number
+  results: T[]
+}

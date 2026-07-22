@@ -1,9 +1,11 @@
 import { ReviewDocument } from '../database/models/review'
+import { UserDocument } from '../database/models/User'
+import { toUserPublicDTO, UserPublicDTO } from './users'
 
 export interface ReviewPublicDTO {
 	id: string
-	userId: string
-	movieId: string
+	movieId: number
+	author: UserPublicDTO
 	plot: number
 	acting: number
 	writing: number
@@ -15,11 +17,20 @@ export interface ReviewPublicDTO {
 	createdAt: Date
 }
 
-export function toReviewPublicDTO(review: ReviewDocument): ReviewPublicDTO {
+// userId must already be populated with the User document (see
+// server/actions/reviews.ts) — the author is exposed as UserPublicDTO
+// (username, honestyScore, isLowTrust, isPhoneVerified), never the raw
+// userId or email, per the data-minimization gate.
+export type PopulatedReviewDocument = Omit<ReviewDocument, 'userId'> & { userId: UserDocument }
+
+export function toReviewPublicDTO(
+	review: PopulatedReviewDocument,
+	lowTrustBadgeThreshold?: number
+): ReviewPublicDTO {
 	return {
 		id: review.id,
-		userId: review.userId.toString(),
-		movieId: review.movieId.toString(),
+		movieId: review.movieId,
+		author: toUserPublicDTO(review.userId, lowTrustBadgeThreshold),
 		plot: review.plot,
 		acting: review.acting,
 		writing: review.writing,

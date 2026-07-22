@@ -1,13 +1,27 @@
 import React from 'react'
+import { redirect } from 'react-router'
 import MovieDetail from '../features/movies/movie-detail'
-import type { MovieDetails, MovieVideos } from '../features/movies/types'
+import type { MovieDetails, MovieVideos, OpinionSummary, PaginatedList, ReviewSummary } from '../features/movies/types'
+import { getSession, requireSession } from '../session.server'
 import type { Route } from './+types/movies.$movieId'
 
 const API_URL = process.env.API_URL ?? 'http://localhost:5000'
 
+const EMPTY_LIST = { page: 1, totalPages: 1, totalResults: 0, results: [] }
+
+const REVIEW_CRITERIA = ['plot', 'acting', 'writing', 'score', 'directing', 'editing', 'cinematography'] as const
+
 interface MovieDetailLoaderData {
 	movie: MovieDetails
 	videos: MovieVideos
+	opinions: PaginatedList<OpinionSummary>
+	reviews: PaginatedList<ReviewSummary>
+	isAuthenticated: boolean
+}
+
+interface SubmissionResult {
+	intent: 'opinion' | 'review'
+	error: string
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -21,10 +35,13 @@ export function meta({ loaderData }: Route.MetaArgs) {
 	]
 }
 
-export async function loader({ params }: Route.LoaderArgs): Promise<MovieDetailLoaderData> {
-	const [movieResponse, videosResponse] = await Promise.all([
+export async function loader({ request, params }: Route.LoaderArgs): Promise<MovieDetailLoaderData> {
+	const [movieResponse, videosResponse, opinionsResponse, reviewsResponse, session] = await Promise.all([
 		fetch(`${API_URL}/movies/details?movieId=${params.movieId}`),
-		fetch(`${API_URL}/movies/videos?movieId=${params.movieId}`)
+		fetch(`${API_URL}/movies/videos?movieId=${params.movieId}`),
+		fetch(`${API_URL}/movies/${params.movieId}/opinions`),
+		fetch(`${API_URL}/movies/${params.movieId}/reviews`),
+		getSession(request)
 	])
 
 	if (!movieResponse.ok) {
@@ -34,12 +51,86 @@ export async function loader({ params }: Route.LoaderArgs): Promise<MovieDetailL
 	const movie = (await movieResponse.json()) as MovieDetails
 	// A missing/broken videos response degrades to "no trailer" rather than
 	// failing the whole page — the movie's own details are the page's reason
-	// to exist, the trailer is a bonus.
+	// to exist, the trailer is a bonus. Opinions/reviews degrade the same way.
 	const videos = videosResponse.ok ? ((await videosResponse.json()) as MovieVideos) : { id: movie.id, results: [] }
+	const opinions = opinionsResponse.ok
+		? ((await opinionsResponse.json()) as PaginatedList<OpinionSummary>)
+		: EMPTY_LIST
+	const reviews = reviewsResponse.ok ? ((await reviewsResponse.json()) as PaginatedList<ReviewSummary>) : EMPTY_LIST
 
-	return { movie, videos }
+	return { movie, videos, opinions, reviews, isAuthenticated: Boolean(session.get('userId')) }
+}
+
+// requireSession is a fast local fail: no network round trip for an
+// obviously logged-out submission, and it throws the documented 401
+// Response the route's error boundary already handles (the opinion/review
+// forms only render for authenticated users, so reaching this without a
+// session means the request bypassed the UI gate). It is NOT the security
+// boundary though — Express independently re-verifies the same signed
+// `__session` cookie (server/session.ts) before writing anything, since
+// Express is reachable directly over the network and can't trust whatever
+// this action forwards. The Cookie header is forwarded as-is (not a userId
+// pulled out of the session) so Express does its own verification rather
+// than trusting this process's read of it.
+export async function action({ request, params }: Route.ActionArgs): Promise<Response> {
+	await requireSession(request)
+	const formData = await request.formData()
+	const intent = formData.get('intent')
+	const movieId = Number(params.movieId)
+	const comment = String(formData.get('comment') ?? '')
+	const cookie = request.headers.get('Cookie') ?? ''
+
+	if (intent === 'opinion') {
+		const upstream = await fetch(`${API_URL}/opinions`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Cookie: cookie },
+			body: JSON.stringify({ movieId, hypeLevel: Number(formData.get('hypeLevel')), comment })
+		})
+
+		if (!upstream.ok) {
+			const body = (await upstream.json()) as { error: { message: string } }
+
+			return Response.json({ intent: 'opinion', error: body.error.message } satisfies SubmissionResult, {
+				status: upstream.status
+			})
+		}
+
+		return redirect(request.url)
+	}
+
+	if (intent === 'review') {
+		const scores = Object.fromEntries(
+			REVIEW_CRITERIA.map(criterion => [criterion, Number(formData.get(criterion))])
+		)
+
+		const upstream = await fetch(`${API_URL}/reviews`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Cookie: cookie },
+			body: JSON.stringify({ movieId, comment, ...scores })
+		})
+
+		if (!upstream.ok) {
+			const body = (await upstream.json()) as { error: { message: string } }
+
+			return Response.json({ intent: 'review', error: body.error.message } satisfies SubmissionResult, {
+				status: upstream.status
+			})
+		}
+
+		return redirect(request.url)
+	}
+
+	throw new Response('Unknown form submission', { status: 400 })
 }
 
 export default function MovieDetailRoute({ loaderData }: Route.ComponentProps) {
-	return <MovieDetail movie={loaderData.movie} videos={loaderData.videos} />
+	return (
+		<MovieDetail
+			movie={loaderData.movie}
+			videos={loaderData.videos}
+			opinions={loaderData.opinions}
+			reviews={loaderData.reviews}
+			isAuthenticated={loaderData.isAuthenticated}
+		/>
+	)
 }

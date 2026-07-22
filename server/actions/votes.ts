@@ -86,6 +86,11 @@ export const castVote = async(request: Request, response: Response, next: NextFu
 		// its budget rather than getting free retries.
 		await recordUserAttempt('vote', voterId)
 
+		// DEFERRED (audit #7, documented not built): between this existence
+		// check and the vote write below, the target could in principle be
+		// deleted, leaving an orphaned Vote row. Moot today — there is no
+		// delete-opinion/delete-review endpoint anywhere in this app — but
+		// worth a second look whenever one is added.
 		const target = await TARGET_MODELS[targetType].findById(targetId).select('userId')
 
 		if (!target) {

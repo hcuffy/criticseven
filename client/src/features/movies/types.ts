@@ -58,6 +58,8 @@ export interface OpinionSummary {
   author: AuthorSummary
   hypeLevel: number
   comment: string
+  netVoteCount: number
+  viewerVote: 1 | -1 | null
   createdAt: string
 }
 
@@ -73,6 +75,8 @@ export interface ReviewSummary {
   editing: number
   cinematography: number
   comment: string
+  netVoteCount: number
+  viewerVote: 1 | -1 | null
   createdAt: string
 }
 

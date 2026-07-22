@@ -26,4 +26,9 @@ const voteSchema = new Schema<VoteDocument>({
 // Enforces one vote per user per target at the database level, not just app logic.
 voteSchema.index({ voterId: 1, targetType: 1, targetId: 1 }, { unique: true })
 
+// Matches the per-voter rate-limit window query in server/actions/votes.ts
+// (count a voter's votes in the last hour) — the unique index above only
+// has voterId as a usable prefix for that query, not createdAt.
+voteSchema.index({ voterId: 1, createdAt: 1 })
+
 export const Vote = mongoose.models.Vote || mongoose.model<VoteDocument>('Vote', voteSchema)

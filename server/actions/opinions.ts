@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { TrailerOpinion } from '../database/models/trailer-opinion'
 import { getConfig } from '../lib/config'
 import { isDuplicateKeyError } from '../lib/mongo-errors'
+import { getVoteSummaries, VoteSummary } from '../lib/vote-counts'
 import { PopulatedTrailerOpinionDocument, toTrailerOpinionPublicDTO } from '../serializers'
 import { getAuthenticatedUserId, SESSION_COOKIE_NAME } from '../session'
 
@@ -52,8 +53,13 @@ export const createOpinion = async(request: Request, response: Response, next: N
 
 		const config = await getConfig()
 
+		const emptyVoteSummary: VoteSummary = { netVoteCount: 0, viewerVote: null }
+
 		response.status(201).json(
-			toTrailerOpinionPublicDTO(opinion as unknown as PopulatedTrailerOpinionDocument, config.lowTrustBadgeThreshold)
+			// A freshly created opinion has no votes yet.
+			toTrailerOpinionPublicDTO(
+				opinion as unknown as PopulatedTrailerOpinionDocument, emptyVoteSummary, config.lowTrustBadgeThreshold
+			)
 		)
 	} catch (error) {
 		// Unique index on (userId, movieId) — one opinion per user per movie.
@@ -81,6 +87,9 @@ export const getMovieOpinions = async(request: Request, response: Response, next
 
 		const page = Math.max(1, Math.trunc(Number(request.query.page)) || 1)
 		const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(Number(request.query.limit)) || DEFAULT_PAGE_SIZE))
+		// Public endpoint — no cookie means no viewer identity, not a 401;
+		// it just means every viewerVote in the response comes back null.
+		const viewerId = getAuthenticatedUserId(request.cookies?.[SESSION_COOKIE_NAME])
 
 		const [opinions, totalResults, config] = await Promise.all([
 			TrailerOpinion.find({ movieId })
@@ -91,13 +100,18 @@ export const getMovieOpinions = async(request: Request, response: Response, next
 			TrailerOpinion.countDocuments({ movieId }),
 			getConfig()
 		])
+		const voteSummaries = await getVoteSummaries('opinion', opinions.map(opinion => opinion._id), viewerId)
 
 		response.json({
 			page,
 			totalPages: Math.max(1, Math.ceil(totalResults / pageSize)),
 			totalResults,
 			results: (opinions as unknown as PopulatedTrailerOpinionDocument[]).map(
-				opinion => toTrailerOpinionPublicDTO(opinion, config.lowTrustBadgeThreshold)
+				opinion => toTrailerOpinionPublicDTO(
+					opinion,
+					voteSummaries.get(opinion.id) ?? { netVoteCount: 0, viewerVote: null },
+					config.lowTrustBadgeThreshold
+				)
 			)
 		})
 	} catch (error) {

@@ -118,7 +118,7 @@ describe('POST /reviews', () => {
 		expect(Object.keys(response.body).sort()).toEqual(
 			[
 				'acting', 'author', 'cinematography', 'comment', 'createdAt', 'directing', 'editing', 'id', 'movieId',
-				'plot', 'score', 'writing'
+				'netVoteCount', 'plot', 'score', 'viewerVote', 'writing'
 			].sort()
 		)
 		expect(response.body).not.toHaveProperty('userId')

@@ -17,10 +17,11 @@ interface MovieDetailLoaderData {
 	opinions: PaginatedList<OpinionSummary>
 	reviews: PaginatedList<ReviewSummary>
 	isAuthenticated: boolean
+	currentUsername: string | null
 }
 
 interface SubmissionResult {
-	intent: 'opinion' | 'review'
+	intent: 'opinion' | 'review' | 'vote' | 'unvote'
 	error: string
 }
 
@@ -58,7 +59,14 @@ export async function loader({ request, params }: Route.LoaderArgs): Promise<Mov
 		: EMPTY_LIST
 	const reviews = reviewsResponse.ok ? ((await reviewsResponse.json()) as PaginatedList<ReviewSummary>) : EMPTY_LIST
 
-	return { movie, videos, opinions, reviews, isAuthenticated: Boolean(session.get('userId')) }
+	return {
+		movie,
+		videos,
+		opinions,
+		reviews,
+		isAuthenticated: Boolean(session.get('userId')),
+		currentUsername: session.get('username') ?? null
+	}
 }
 
 // requireSession is a fast local fail: no network round trip for an
@@ -120,6 +128,54 @@ export async function action({ request, params }: Route.ActionArgs): Promise<Res
 		return redirect(request.url)
 	}
 
+	if (intent === 'vote') {
+		// Fetcher-driven (client/src/ui/vote-buttons.tsx), not a full-page
+		// <Form> submission — no redirect() here, the fetcher revalidates the
+		// loader itself once this resolves.
+		const upstream = await fetch(`${API_URL}/votes`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Cookie: cookie },
+			body: JSON.stringify({
+				targetType: formData.get('targetType'),
+				targetId: formData.get('targetId'),
+				voteValue: Number(formData.get('voteValue'))
+			})
+		})
+
+		if (!upstream.ok) {
+			const body = (await upstream.json()) as { error: { message: string } }
+
+			return Response.json({ intent: 'vote', error: body.error.message } satisfies SubmissionResult, {
+				status: upstream.status
+			})
+		}
+
+		return Response.json({ intent: 'vote', error: '' } satisfies SubmissionResult, { status: 200 })
+	}
+
+	if (intent === 'unvote') {
+		// Standard toggle-off: tapping the already-active vote button removes
+		// it instead of re-submitting the same value (client/src/ui/vote-buttons.tsx).
+		const upstream = await fetch(`${API_URL}/votes`, {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json', Cookie: cookie },
+			body: JSON.stringify({
+				targetType: formData.get('targetType'),
+				targetId: formData.get('targetId')
+			})
+		})
+
+		if (!upstream.ok) {
+			const body = (await upstream.json()) as { error: { message: string } }
+
+			return Response.json({ intent: 'unvote', error: body.error.message } satisfies SubmissionResult, {
+				status: upstream.status
+			})
+		}
+
+		return Response.json({ intent: 'unvote', error: '' } satisfies SubmissionResult, { status: 200 })
+	}
+
 	throw new Response('Unknown form submission', { status: 400 })
 }
 
@@ -131,6 +187,7 @@ export default function MovieDetailRoute({ loaderData }: Route.ComponentProps) {
 			opinions={loaderData.opinions}
 			reviews={loaderData.reviews}
 			isAuthenticated={loaderData.isAuthenticated}
+			currentUsername={loaderData.currentUsername}
 		/>
 	)
 }

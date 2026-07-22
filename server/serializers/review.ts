@@ -1,5 +1,6 @@
 import { ReviewDocument } from '../database/models/review'
 import { UserDocument } from '../database/models/User'
+import { VoteSummary } from '../lib/vote-counts'
 import { toUserPublicDTO, UserPublicDTO } from './users'
 
 export interface ReviewPublicDTO {
@@ -14,6 +15,8 @@ export interface ReviewPublicDTO {
 	editing: number
 	cinematography: number
 	comment: string
+	netVoteCount: number
+	viewerVote: 1 | -1 | null
 	createdAt: Date
 }
 
@@ -25,6 +28,7 @@ export type PopulatedReviewDocument = Omit<ReviewDocument, 'userId'> & { userId:
 
 export function toReviewPublicDTO(
 	review: PopulatedReviewDocument,
+	voteSummary: VoteSummary,
 	lowTrustBadgeThreshold?: number
 ): ReviewPublicDTO {
 	return {
@@ -39,6 +43,8 @@ export function toReviewPublicDTO(
 		editing: review.editing,
 		cinematography: review.cinematography,
 		comment: review.comment,
+		netVoteCount: voteSummary.netVoteCount,
+		viewerVote: voteSummary.viewerVote,
 		createdAt: review.createdAt
 	}
 }

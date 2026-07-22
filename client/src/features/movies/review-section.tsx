@@ -3,6 +3,7 @@ import React from 'react'
 import { Form, Link, useActionData, useNavigation } from 'react-router'
 import LowTrustBadge from '../../ui/low-trust-badge'
 import RatingInput from '../../ui/rating-input'
+import VoteButtons from '../../ui/vote-buttons'
 import type { PaginatedList, ReviewSummary } from './types'
 
 interface SubmissionResult {
@@ -45,7 +46,13 @@ function ReviewForm() {
   )
 }
 
-function ReviewList({ reviews }: { reviews: ReviewSummary[] }) {
+function ReviewList(
+  { reviews, isAuthenticated, currentUsername }: {
+    reviews: ReviewSummary[]
+    isAuthenticated: boolean
+    currentUsername: string | null
+  }
+) {
   if (reviews.length === 0) {
     return (
       <Text c="dimmed" size="sm">
@@ -58,10 +65,22 @@ function ReviewList({ reviews }: { reviews: ReviewSummary[] }) {
     <Stack gap="sm">
       {reviews.map(review => (
         <Card key={review.id} withBorder padding="sm" radius="md">
-          <Group gap="xs">
-            <Text fw={500}>{review.author.username}</Text>
-            {review.author.isLowTrust ? <LowTrustBadge /> : null}
-            <Badge variant="light" color="teal">Score {review.score}/10</Badge>
+          <Group gap="xs" justify="space-between">
+            <Group gap="xs">
+              <Text fw={500}>{review.author.username}</Text>
+              {review.author.isLowTrust ? <LowTrustBadge /> : null}
+              <Text size="sm" c="dimmed">Honesty {review.author.honestyScore}</Text>
+              <Badge variant="light" color="teal">Score {review.score}/10</Badge>
+            </Group>
+            {review.author.username === currentUsername ? null : (
+              <VoteButtons
+                targetType="review"
+                targetId={review.id}
+                netVoteCount={review.netVoteCount}
+                viewerVote={review.viewerVote}
+                isAuthenticated={isAuthenticated}
+              />
+            )}
           </Group>
           <Group gap="xs" mt="xs">
             {CRITERIA.filter(criterion => criterion.name !== 'score').map(criterion => (
@@ -78,7 +97,11 @@ function ReviewList({ reviews }: { reviews: ReviewSummary[] }) {
 }
 
 export default function ReviewSection(
-  { reviews, isAuthenticated }: { reviews: PaginatedList<ReviewSummary>; isAuthenticated: boolean }
+  { reviews, isAuthenticated, currentUsername }: {
+    reviews: PaginatedList<ReviewSummary>
+    isAuthenticated: boolean
+    currentUsername: string | null
+  }
 ) {
   return (
     <Stack gap="md" mt="xl">
@@ -96,7 +119,7 @@ export default function ReviewSection(
         </Text>
       )}
 
-      <ReviewList reviews={reviews.results} />
+      <ReviewList reviews={reviews.results} isAuthenticated={isAuthenticated} currentUsername={currentUsername} />
     </Stack>
   )
 }

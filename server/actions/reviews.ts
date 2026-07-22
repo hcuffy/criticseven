@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { Review } from '../database/models/review'
 import { getConfig } from '../lib/config'
 import { isDuplicateKeyError } from '../lib/mongo-errors'
+import { getVoteSummaries, VoteSummary } from '../lib/vote-counts'
 import { PopulatedReviewDocument, toReviewPublicDTO } from '../serializers'
 import { getAuthenticatedUserId, SESSION_COOKIE_NAME } from '../session'
 
@@ -80,8 +81,11 @@ export const createReview = async(request: Request, response: Response, next: Ne
 
 		const config = await getConfig()
 
+		const emptyVoteSummary: VoteSummary = { netVoteCount: 0, viewerVote: null }
+
 		response.status(201).json(
-			toReviewPublicDTO(review as unknown as PopulatedReviewDocument, config.lowTrustBadgeThreshold)
+			// A freshly created review has no votes yet.
+			toReviewPublicDTO(review as unknown as PopulatedReviewDocument, emptyVoteSummary, config.lowTrustBadgeThreshold)
 		)
 	} catch (error) {
 		// Unique index on (userId, movieId) — one review per user per movie.
@@ -109,6 +113,9 @@ export const getMovieReviews = async(request: Request, response: Response, next:
 
 		const page = Math.max(1, Math.trunc(Number(request.query.page)) || 1)
 		const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(Number(request.query.limit)) || DEFAULT_PAGE_SIZE))
+		// Public endpoint — no cookie means no viewer identity, not a 401;
+		// it just means every viewerVote in the response comes back null.
+		const viewerId = getAuthenticatedUserId(request.cookies?.[SESSION_COOKIE_NAME])
 
 		const [reviews, totalResults, config] = await Promise.all([
 			Review.find({ movieId })
@@ -119,13 +126,18 @@ export const getMovieReviews = async(request: Request, response: Response, next:
 			Review.countDocuments({ movieId }),
 			getConfig()
 		])
+		const voteSummaries = await getVoteSummaries('review', reviews.map(review => review._id), viewerId)
 
 		response.json({
 			page,
 			totalPages: Math.max(1, Math.ceil(totalResults / pageSize)),
 			totalResults,
 			results: (reviews as unknown as PopulatedReviewDocument[]).map(
-				review => toReviewPublicDTO(review, config.lowTrustBadgeThreshold)
+				review => toReviewPublicDTO(
+					review,
+					voteSummaries.get(review.id) ?? { netVoteCount: 0, viewerVote: null },
+					config.lowTrustBadgeThreshold
+				)
 			)
 		})
 	} catch (error) {

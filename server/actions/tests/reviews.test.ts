@@ -123,7 +123,7 @@ describe('POST /reviews', () => {
 		)
 		expect(response.body).not.toHaveProperty('userId')
 		expect(response.body.author).toEqual({
-			username: 'critic7', honestyScore: 50, isLowTrust: false, isPhoneVerified: false
+			username: 'critic7', honestyScore: 50, isLowTrust: false, isPhoneVerified: false, createdAt: user.createdAt.toISOString()
 		})
 	})
 

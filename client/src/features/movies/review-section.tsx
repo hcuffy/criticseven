@@ -67,7 +67,9 @@ function ReviewList(
         <Card key={review.id} withBorder padding="sm" radius="md">
           <Group gap="xs" justify="space-between">
             <Group gap="xs">
-              <Text fw={500}>{review.author.username}</Text>
+              <Text component={Link} to={`/users/${review.author.username}`} fw={500}>
+                {review.author.username}
+              </Text>
               {review.author.isLowTrust ? <LowTrustBadge /> : null}
               <Text size="sm" c="dimmed">Honesty {review.author.honestyScore}</Text>
               <Badge variant="light" color="teal">Score {review.score}/10</Badge>

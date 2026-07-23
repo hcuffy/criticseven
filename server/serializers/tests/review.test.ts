@@ -5,7 +5,8 @@ const user = {
 	email: 'critic7@example.com',
 	honestyScore: 45,
 	isPhoneVerified: true,
-	phoneNumberHash: 'salt:hash'
+	phoneNumberHash: 'salt:hash',
+	createdAt: new Date('2025-06-01T00:00:00.000Z')
 }
 
 const review = {
@@ -40,7 +41,8 @@ describe('review serializer allowlist', () => {
 			username: 'critic7',
 			honestyScore: 45,
 			isLowTrust: false,
-			isPhoneVerified: true
+			isPhoneVerified: true,
+			createdAt: user.createdAt
 		})
 	})
 

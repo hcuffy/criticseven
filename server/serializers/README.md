@@ -15,11 +15,12 @@ TrailerOpinion, Review, Vote, etc. in Phase 2+):
 - Route handlers call the DTO before `response.send()` — raw model documents
   and raw upstream API payloads must not be sent directly.
 
-Example (built in Phase 3): `UserPublicDTO { username, honestyScore, isLowTrust, isPhoneVerified }`
-— `isPhoneVerified` feeds a future "Verified" badge the same way `isLowTrust`
-feeds the low-trust badge (opposite signal, same DTO-exposure pattern).
-`phoneNumberHash` never appears here — like auth-code hashes, it's not
-something the client needs.
+Example (built in Phase 3, `createdAt` added in Phase 5/4 for the profile
+page's "member since"): `UserPublicDTO { username, honestyScore, isLowTrust,
+isPhoneVerified, createdAt }` — `isPhoneVerified` feeds a future "Verified"
+badge the same way `isLowTrust` feeds the low-trust badge (opposite signal,
+same DTO-exposure pattern). `phoneNumberHash` never appears here — like
+auth-code hashes, it's not something the client needs.
 
 Built in Phase 2 (schema): `MoviePublicDTO`, `TrailerOpinionPublicDTO`,
 `ReviewPublicDTO`, `VotePublicDTO`, `ConfigPublicDTO`. Notes specific to

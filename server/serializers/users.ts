@@ -6,6 +6,7 @@ export interface UserPublicDTO {
 	honestyScore: number
 	isLowTrust: boolean
 	isPhoneVerified: boolean
+	createdAt: Date
 }
 
 // Threshold defaults to Config's default rather than reading Config here —
@@ -19,6 +20,7 @@ export function toUserPublicDTO(
 		username: user.username,
 		honestyScore: user.honestyScore,
 		isLowTrust: user.honestyScore < lowTrustBadgeThreshold,
-		isPhoneVerified: user.isPhoneVerified
+		isPhoneVerified: user.isPhoneVerified,
+		createdAt: user.createdAt
 	}
 }

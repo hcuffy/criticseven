@@ -53,7 +53,9 @@ function OpinionList(
         <Card key={opinion.id} withBorder padding="sm" radius="md">
           <Group gap="xs" justify="space-between">
             <Group gap="xs">
-              <Text fw={500}>{opinion.author.username}</Text>
+              <Text component={Link} to={`/users/${opinion.author.username}`} fw={500}>
+                {opinion.author.username}
+              </Text>
               {opinion.author.isLowTrust ? <LowTrustBadge /> : null}
               <Text size="sm" c="dimmed">Honesty {opinion.author.honestyScore}</Text>
               <Badge variant="light" color="orange">Hype {opinion.hypeLevel}/5</Badge>

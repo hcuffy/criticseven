@@ -11,6 +11,7 @@ Every movie carries two separate kinds of user contribution, kept strictly apart
 - **Workspace:** pnpm workspace (root + `client/`).
 - **Movie data:** [TMDB API](https://www.themoviedb.org/documentation/api). This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
 - **Bot protection:** Cloudflare Turnstile, verified server-side before an auth code is issued.
+- **Email delivery:** [Resend](https://resend.com), for verification code emails.
 - **Image caching (optional):** Cloudflare Images, proxying and caching movie posters and backdrops. Falls back to direct TMDB image URLs when unconfigured.
 
 ## Getting started

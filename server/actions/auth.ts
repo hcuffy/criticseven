@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express'
 import { AuthCode } from '../database/models/AuthCode'
 import { User } from '../database/models/User'
 import { hashValue, verifyHash } from '../lib/hash'
+import { sendVerificationCodeEmail } from '../lib/mailer'
 import { isRateLimited, recordAttempt } from '../lib/rate-limit'
 import { verifyTurnstileToken } from '../lib/turnstile'
 
@@ -69,8 +70,15 @@ export const requestCode = async(request: Request, response: Response, next: Nex
 				expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000)
 			})
 
-			// Delivery (email provider) is a separate, not-yet-made infra
-			// decision — code is persisted and ready to send once that's wired up.
+			// Delivery failure isn't surfaced to the caller — the response stays
+			// generic either way so an attacker can't distinguish "no account" from
+			// "account exists but the email provider is down" - but it is logged
+			// server-side (without the email address) so a delivery outage is visible in ops.
+			const delivered = await sendVerificationCodeEmail(email, code, CODE_TTL_MINUTES)
+
+			if (!delivered) {
+				console.error('Verification code email was not delivered')
+			}
 		}
 
 		response.json(GENERIC_REQUEST_RESPONSE)

@@ -3,8 +3,16 @@ import request from 'supertest'
 import { AuthCode } from '../../database/models/AuthCode'
 import { User } from '../../database/models/User'
 import { hashValue } from '../../lib/hash'
+import { sendVerificationCodeEmail } from '../../lib/mailer'
 import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from '../../test-support/database'
+import { verifyTurnstileToken } from '../../lib/turnstile'
 import authRoutes from '../../routes/auth-routes'
+
+jest.mock('../../lib/turnstile')
+jest.mock('../../lib/mailer')
+
+const mockedVerifyTurnstileToken = verifyTurnstileToken as jest.MockedFunction<typeof verifyTurnstileToken>
+const mockedSendVerificationCodeEmail = sendVerificationCodeEmail as jest.MockedFunction<typeof sendVerificationCodeEmail>
 
 const app = express()
 
@@ -43,6 +51,76 @@ afterAll(async() => {
 
 afterEach(async() => {
 	await clearTestDatabase()
+	jest.clearAllMocks()
+})
+
+describe('POST /auth/request-code', () => {
+	test('valid turnstile token and existing user: a code is persisted and delivery is attempted', async() => {
+		await seedUser()
+		mockedVerifyTurnstileToken.mockResolvedValue(true)
+		mockedSendVerificationCodeEmail.mockResolvedValue(true)
+
+		const response = await request(app)
+			.post('/auth/request-code')
+			.send({ email: EMAIL, turnstileToken: 'valid-token' })
+
+		expect(response.status).toBe(200)
+		expect(mockedSendVerificationCodeEmail).toHaveBeenCalledTimes(1)
+		expect(mockedSendVerificationCodeEmail).toHaveBeenCalledWith(EMAIL, expect.any(String), expect.any(Number))
+
+		const stored = await AuthCode.findOne({ email: EMAIL })
+
+		expect(stored).not.toBeNull()
+	})
+
+	test('unknown email: generic response, no code persisted, delivery never attempted', async() => {
+		mockedVerifyTurnstileToken.mockResolvedValue(true)
+
+		const response = await request(app)
+			.post('/auth/request-code')
+			.send({ email: 'nobody@example.com', turnstileToken: 'valid-token' })
+
+		expect(response.status).toBe(200)
+		expect(mockedSendVerificationCodeEmail).not.toHaveBeenCalled()
+
+		const stored = await AuthCode.findOne({ email: 'nobody@example.com' })
+
+		expect(stored).toBeNull()
+	})
+
+	test('invalid turnstile token: generic response, delivery never attempted', async() => {
+		await seedUser()
+		mockedVerifyTurnstileToken.mockResolvedValue(false)
+
+		const response = await request(app)
+			.post('/auth/request-code')
+			.send({ email: EMAIL, turnstileToken: 'bad-token' })
+
+		expect(response.status).toBe(200)
+		expect(mockedSendVerificationCodeEmail).not.toHaveBeenCalled()
+	})
+
+	test('email delivery failing still returns the same generic response, not an error', async() => {
+		await seedUser()
+		mockedVerifyTurnstileToken.mockResolvedValue(true)
+		mockedSendVerificationCodeEmail.mockResolvedValue(false)
+
+		const response = await request(app)
+			.post('/auth/request-code')
+			.send({ email: EMAIL, turnstileToken: 'valid-token' })
+
+		expect(response.status).toBe(200)
+		expect(response.body).toEqual({
+			message: 'If an account exists for that email, a verification code has been sent.'
+		})
+	})
+
+	test('missing fields return a distinct 400', async() => {
+		const response = await request(app).post('/auth/request-code').send({ email: EMAIL })
+
+		expect(response.status).toBe(400)
+		expect(mockedSendVerificationCodeEmail).not.toHaveBeenCalled()
+	})
 })
 
 describe('POST /auth/verify-code', () => {

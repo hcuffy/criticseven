@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && OUTPUT=$(pnpm exec tsc --noEmit 2>&1 && pnpm --filter criticseven-client typecheck 2>&1 && pnpm lint 2>&1 && pnpm test 2>&1); STATUS=$?; if [ $STATUS -ne 0 ]; then REASON=$(echo \"$OUTPUT\" | tail -80 | jq -Rs .); echo \"{\\\"decision\\\":\\\"block\\\",\\\"reason\\\":$REASON}\"; fi",
+            "timeout": 300,
+            "statusMessage": "Running server typecheck, client typecheck, lint, and tests (foreground — background hangs on mongodb-memory-server)..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; case \"$f\" in */eslint.config.mjs|eslint.config.mjs|*/tsconfig.json|tsconfig.json|*/.claude/settings.json|.claude/settings.json|*/CLAUDE.md|CLAUDE.md) echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"Config changes require explicit user approval — fix the code, not the linter.\\\"}}\";; esac; }",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

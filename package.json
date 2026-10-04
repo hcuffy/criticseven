@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@babel/runtime": "7.29.7",
-    "axios": "1.18.1",
+    "axios": "1.20.0",
     "concurrently": "5.1.0",
     "cookie-parser": "1.4.7",
     "debug": "4.4.3",

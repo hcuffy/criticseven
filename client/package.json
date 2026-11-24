@@ -15,7 +15,7 @@
     "@mantine/hooks": "^9.0.0",
     "@react-router/node": "^8.0.0",
     "@react-router/serve": "^8.0.0",
-    "i18next": "^24.0.0",
+    "i18next": "^26.3.4",
     "normalize.css": "^8.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
